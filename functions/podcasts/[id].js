@@ -54,7 +54,7 @@ export async function onRequest(context) {
                 const description = author
                     ? `Podcast by ${author} • ${episodeCount} Episodes\nListen on Monochrome`
                     : `Podcast • ${episodeCount} Episodes\nListen on Monochrome`;
-                const imageUrl = feed.image || feed.artwork || 'https://monochrome.tf/assets/appicon.png';
+                const imageUrl = feed.image || feed.artwork || 'https://audivo.in/icon.jpg';
                 const pageUrl = new URL(request.url).href;
 
                 const metaHtml = `
@@ -93,7 +93,25 @@ export async function onRequest(context) {
         }
     }
 
-    const url = new URL(request.url);
-    url.pathname = '/';
-    return env.ASSETS.fetch(new Request(url, request));
+    // For non-bots, return the main app HTML to enable client-side routing
+    const mainHtml = `
+        <!DOCTYPE html>
+        <html lang="en">
+        <head>
+            <meta charset="UTF-8">
+            <title>audivo.in</title>
+            <meta name="description" content="A minimalist music streaming application">
+            <meta name="theme-color" content="#000000">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        </head>
+        <body>
+            <div id="app"></div>
+            <script type="module" src="/js/app.js"></script>
+        </body>
+        </html>
+    `;
+    
+    return new Response(mainHtml, {
+        headers: { 'content-type': 'text/html;charset=UTF-8' },
+    });
 }

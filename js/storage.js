@@ -330,9 +330,9 @@ export const themeManager = {
 
     getTheme() {
         try {
-            return localStorage.getItem(this.STORAGE_KEY) || 'system';
+            return localStorage.getItem(this.STORAGE_KEY) || 'monochrome';
         } catch {
-            return 'system';
+            return 'monochrome';
         }
     },
 
@@ -2098,14 +2098,8 @@ export const sidebarSettings = {
     },
 
     restoreState() {
-        const isCollapsed = this.isCollapsed();
-        if (isCollapsed) {
-            document.body.classList.add('sidebar-collapsed');
-            const toggleBtn = document.getElementById('sidebar-toggle');
-            if (toggleBtn) {
-                toggleBtn.innerHTML = SVG_RIGHT_ARROW(20);
-            }
-        }
+        document.body.classList.remove('sidebar-collapsed');
+        this.setCollapsed(false);
     },
 };
 

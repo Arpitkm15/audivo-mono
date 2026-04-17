@@ -673,12 +673,19 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
     // Theme picker
     const themePicker = document.getElementById('theme-picker');
-    const currentTheme = themeManager.getTheme();
+    const THEME_CHANGE_LOCKED = true;
+    const currentTheme = 'monochrome';
+
+    themeManager.setTheme('monochrome');
 
     themePicker.querySelectorAll('.theme-option').forEach((option) => {
         if (option.dataset.theme === currentTheme) {
             option.classList.add('active');
+        } else {
+            option.classList.remove('active');
         }
+
+        if (THEME_CHANGE_LOCKED) return;
 
         option.addEventListener('click', () => {
             const theme = option.dataset.theme;
@@ -696,6 +703,12 @@ export async function initializeSettings(scrobbler, player, api, ui) {
             }
         });
     });
+
+    if (THEME_CHANGE_LOCKED) {
+        themePicker.classList.add('disabled');
+        themePicker.setAttribute('aria-disabled', 'true');
+        document.getElementById('custom-theme-editor')?.classList.remove('show');
+    }
 
     const communityThemeContainer = document.getElementById('applied-community-theme-container');
     const communityThemeBtn = document.getElementById('applied-community-theme-btn');

@@ -28,6 +28,7 @@ export function initializeUIInteractions(player, api, ui) {
     const sidebar = document.querySelector('.sidebar');
     const sidebarOverlay = document.getElementById('sidebar-overlay');
     const hamburgerBtn = document.getElementById('hamburger-btn');
+    const sidebarCloseBtn = document.getElementById('sidebar-close-btn');
     const queueBtn = document.getElementById('queue-btn');
     const libraryPage = document.getElementById('page-library');
 
@@ -80,6 +81,30 @@ export function initializeUIInteractions(player, api, ui) {
         libraryPage.addEventListener('drop', handleDrop);
     }
 
+    const hasSidebarToggles = Boolean(sidebar && sidebarOverlay && hamburgerBtn);
+    if (hasSidebarToggles) {
+        // Sidebar mobile
+        hamburgerBtn.addEventListener('click', () => {
+            sidebar.classList.add('is-open');
+            sidebarOverlay.classList.add('is-visible');
+        });
+
+        const closeSidebar = () => {
+            sidebar.classList.remove('is-open');
+            sidebarOverlay.classList.remove('is-visible');
+        };
+
+        sidebarOverlay.addEventListener('click', closeSidebar);
+
+        sidebarCloseBtn?.addEventListener('click', closeSidebar);
+
+        sidebar.addEventListener('click', (e) => {
+            if (e.target.closest('a')) {
+                closeSidebar();
+            }
+        });
+    }
+
     let draggedQueueIndex = null;
     let queueStartIndex = 0;
     let queueEndIndex = 1000;
@@ -90,25 +115,6 @@ export function initializeUIInteractions(player, api, ui) {
     const QUEUE_MAX_RENDERED = 1000;
     const QUEUE_CHUNK_SIZE = 200;
     const ESTIMATED_ITEM_HEIGHT = 58;
-
-    // Sidebar mobile
-    hamburgerBtn.addEventListener('click', () => {
-        sidebar.classList.add('is-open');
-        sidebarOverlay.classList.add('is-visible');
-    });
-
-    const closeSidebar = () => {
-        sidebar.classList.remove('is-open');
-        sidebarOverlay.classList.remove('is-visible');
-    };
-
-    sidebarOverlay.addEventListener('click', closeSidebar);
-
-    sidebar.addEventListener('click', (e) => {
-        if (e.target.closest('a')) {
-            closeSidebar();
-        }
-    });
 
     // Queue panel
     const renderQueueControls = async (container) => {

@@ -266,7 +266,7 @@ export class UIRenderer {
         this.renderLock = false;
         this.lastRecommendedTracks = [];
         this.currentArtistId = null;
-        this.fullscreenLyricsVisible = true;
+        this.fullscreenLyricsVisible = localStorage.getItem('fullscreenLyricsVisible') === 'true';
         this.fullscreenPlaybackStateCleanup = null;
         this.fullscreenDismissHandleCleanup = null;
         this.fullscreenLyricsToggleCleanup = null;
@@ -587,7 +587,7 @@ export class UIRenderer {
         const trackTitle = getTrackTitle(track);
         const isCurrentTrack = this.player?.currentTrack?.id === track.id;
 
-        if (track.isLocal && (!track.album?.cover || track.album.cover === 'assets/appicon.png')) {
+        if (track.isLocal && (!track.album?.cover || track.album.cover === '/icon.jpg')) {
             showCover = false;
         }
 
@@ -780,7 +780,7 @@ export class UIRenderer {
     }
 
     createMixCardHTML(mix) {
-        const imageSrc = mix.cover || '/assets/appicon.png';
+        const imageSrc = mix.cover || '/icon.jpg';
         const description = mix.subTitle || mix.description || '';
         const isCompact = cardSettings.isCompactAlbum();
 
@@ -840,7 +840,7 @@ export class UIRenderer {
             } else if (uniqueCovers.length > 0) {
                 imageHTML = `<img src="${this.api.getCoverUrl(uniqueCovers[0])}" alt="${playlist.name}" class="card-image" loading="lazy">`;
             } else {
-                imageHTML = `<img src="/assets/appicon.png" alt="${playlist.name}" class="card-image" loading="lazy">`;
+                imageHTML = `<img src="/icon.jpg" alt="${playlist.name}" class="card-image" loading="lazy">`;
             }
         }
 
@@ -1483,13 +1483,11 @@ export class UIRenderer {
             lyricsManager && activeElement && lyricsPane && lyricsContent && track.type !== 'video'
         );
         if (canRenderLyrics) {
-            this.fullscreenLyricsVisible = true;
             if (lyricsToggleBtn) lyricsToggleBtn.style.removeProperty('display');
             overlay.classList.remove('lyrics-unavailable');
             clearFullscreenLyricsSync(lyricsContent);
             await renderLyricsInFullscreen(track, activeElement, lyricsManager, lyricsContent);
         } else {
-            this.fullscreenLyricsVisible = false;
             if (lyricsToggleBtn) lyricsToggleBtn.style.display = 'none';
             overlay.classList.add('lyrics-unavailable');
             if (lyricsContent) {
@@ -1570,6 +1568,7 @@ export class UIRenderer {
         if (!overlay || overlay.classList.contains('lyrics-unavailable')) return false;
 
         this.fullscreenLyricsVisible = !this.fullscreenLyricsVisible;
+        localStorage.setItem('fullscreenLyricsVisible', this.fullscreenLyricsVisible);
         this.updateFullscreenLyricsVisibility(overlay);
         return true;
     }
@@ -2461,7 +2460,7 @@ export class UIRenderer {
             await this.updateGlobalTheme();
         }
 
-        const downloadsdisabled = true;
+        const downloadsdisabled = false;
         if (downloadsdisabled == true) {
             if (pageId === 'download') {
                 const maintenanceModal = document.getElementById('maintenance-modal');
@@ -2525,6 +2524,10 @@ export class UIRenderer {
     async renderPartyDetailPage(id) {
         await this.showPage('party-detail');
         await partyManager.joinParty(id);
+    }
+
+    async renderDownloadPage() {
+        await this.showPage('download');
     }
 
     async renderLibraryPage() {
@@ -4431,7 +4434,7 @@ export class UIRenderer {
 
                                 reviewdiv.innerHTML = `
                                     <img src="${review.image}" width="50" height="50" style="border-radius: 8px; object-fit: cover; background: var(--highlight);" 
-                                         onerror="this.src='images/monochrome-logo.svg'; this.onerror=null;" 
+                                         onerror="this.src='/icon.jpg'; this.onerror=null;" 
                                          loading="lazy" 
                                          referrerpolicy="no-referrer">
                                     <div style="flex: 1;">
@@ -4842,7 +4845,7 @@ export class UIRenderer {
                             collageEl.appendChild(img);
                         });
                     } else {
-                        imageEl.src = '/assets/appicon.png';
+                        imageEl.src = '/icon.jpg';
                         imageEl.style.display = 'block';
                         if (collageEl) collageEl.style.display = 'none';
                     }
@@ -4975,93 +4978,97 @@ export class UIRenderer {
             } else {
                 if (addPlaylistBtn) addPlaylistBtn.style.display = 'flex';
 
-                // If source was explicitly 'user' and we didn't find it, fail.
-                if (source === 'user') {
-                    throw new Error('Playlist not found. If this is a custom playlist, make sure it is set to Public.');
-                }
+                // Try API request (works for both public Tidal playlists and public user playlists)
+                try {
+                    let apiResult = await this.api.getPlaylist(playlistId);
 
-                // Render API playlist
-                let apiResult = await this.api.getPlaylist(playlistId);
+                    const { playlist, tracks } = apiResult;
 
-                const { playlist, tracks } = apiResult;
+                    const imageId = playlist.squareImage || playlist.image;
+                    if (imageId) {
+                        imageEl.src = this.api.getCoverUrl(imageId, '1080');
+                        this.setPageBackground(imageEl.src);
 
-                const imageId = playlist.squareImage || playlist.image;
-                if (imageId) {
-                    imageEl.src = this.api.getCoverUrl(imageId, '1080');
-                    this.setPageBackground(imageEl.src);
+                        await this.extractAndApplyColor(this.api.getCoverUrl(imageId, '160'));
+                    } else {
+                        imageEl.src = '/icon.jpg';
+                        this.setPageBackground(null);
+                        this.resetVibrantColor();
+                    }
 
-                    await this.extractAndApplyColor(this.api.getCoverUrl(imageId, '160'));
-                } else {
-                    imageEl.src = '/assets/appicon.png';
-                    this.setPageBackground(null);
-                    this.resetVibrantColor();
-                }
+                    titleEl.textContent = playlist.title;
+                    this.adjustTitleFontSize(titleEl, playlist.title);
 
-                titleEl.textContent = playlist.title;
-                this.adjustTitleFontSize(titleEl, playlist.title);
+                    const totalDuration = calculateTotalDuration(tracks);
 
-                const totalDuration = calculateTotalDuration(tracks);
+                    metaEl.textContent = `${playlist.numberOfTracks} tracks • ${formatDuration(totalDuration)}`;
+                    descEl.textContent = playlist.description || '';
 
-                metaEl.textContent = `${playlist.numberOfTracks} tracks • ${formatDuration(totalDuration)}`;
-                descEl.textContent = playlist.description || '';
+                    const originalTracks = [...tracks];
+                    const savedSort = localStorage.getItem(`playlist-sort-${playlistId}`);
+                    let currentSort = savedSort || 'custom';
+                    let currentTracks = sortTracks(originalTracks, currentSort);
 
-                const originalTracks = [...tracks];
-                const savedSort = localStorage.getItem(`playlist-sort-${playlistId}`);
-                let currentSort = savedSort || 'custom';
-                let currentTracks = sortTracks(originalTracks, currentSort);
+                    const renderTracks = async () => {
+                        tracklistContainer.innerHTML = TRACKLIST_HEADER_WITH_LIKE_COL_HTML;
+                        await this.renderListWithTracks(tracklistContainer, currentTracks, true, true, false, true);
+                    };
 
-                const renderTracks = async () => {
-                    tracklistContainer.innerHTML = TRACKLIST_HEADER_WITH_LIKE_COL_HTML;
-                    await this.renderListWithTracks(tracklistContainer, currentTracks, true, true, false, true);
-                };
+                    const applySort = async (sortType) => {
+                        currentSort = sortType;
+                        localStorage.setItem(`playlist-sort-${playlistId}`, sortType);
+                        currentTracks = sortTracks(originalTracks, sortType);
+                        await renderTracks();
+                    };
 
-                const applySort = async (sortType) => {
-                    currentSort = sortType;
-                    localStorage.setItem(`playlist-sort-${playlistId}`, sortType);
-                    currentTracks = sortTracks(originalTracks, sortType);
                     await renderTracks();
-                };
 
-                await renderTracks();
+                    playBtn.onclick = () => {
+                        this.player.setQueue(currentTracks, 0);
+                        this.player.playTrackFromQueue();
+                    };
 
-                playBtn.onclick = () => {
-                    this.player.setQueue(currentTracks, 0);
-                    this.player.playTrackFromQueue();
-                };
+                    // Update header like button
+                    const playlistLikeBtn = document.getElementById('like-playlist-btn');
+                    if (playlistLikeBtn) {
+                        const isLiked = await db.isFavorite('playlist', playlist.uuid);
+                        playlistLikeBtn.innerHTML = this.createHeartIcon(isLiked);
+                        playlistLikeBtn.classList.toggle('active', isLiked);
+                        playlistLikeBtn.style.display = 'flex';
+                    }
 
-                // Update header like button
-                const playlistLikeBtn = document.getElementById('like-playlist-btn');
-                if (playlistLikeBtn) {
-                    const isLiked = await db.isFavorite('playlist', playlist.uuid);
-                    playlistLikeBtn.innerHTML = this.createHeartIcon(isLiked);
-                    playlistLikeBtn.classList.toggle('active', isLiked);
-                    playlistLikeBtn.style.display = 'flex';
+                    // Show/hide Delete button
+                    const deleteBtn = document.getElementById('delete-playlist-btn');
+                    if (deleteBtn) {
+                        deleteBtn.style.display = 'none';
+                    }
+
+                    // Hide recommended songs section for tidal playlists
+                    const recommendedSection = document.getElementById('playlist-section-recommended');
+                    if (recommendedSection) {
+                        recommendedSection.style.display = 'none';
+                    }
+
+                    // Render Actions (Shuffle + Sort + Share)
+                    await this.updatePlaylistHeaderActions(
+                        playlist,
+                        false,
+                        currentTracks,
+                        false,
+                        applySort,
+                        () => currentSort
+                    );
+
+                    recentActivityManager.addPlaylist(playlist);
+                    document.title = playlist.title || 'Artist Mix';
+                } catch (apiError) {
+                    // If it was supposed to be a user playlist and API also failed
+                    if (source === 'user') {
+                        throw new Error('Playlist not found. If this is a custom playlist, make sure it is set to Public.');
+                    }
+                    // For other sources, re-throw the original API error
+                    throw apiError;
                 }
-
-                // Show/hide Delete button
-                const deleteBtn = document.getElementById('delete-playlist-btn');
-                if (deleteBtn) {
-                    deleteBtn.style.display = 'none';
-                }
-
-                // Hide recommended songs section for tidal playlists
-                const recommendedSection = document.getElementById('playlist-section-recommended');
-                if (recommendedSection) {
-                    recommendedSection.style.display = 'none';
-                }
-
-                // Render Actions (Shuffle + Sort + Share)
-                await this.updatePlaylistHeaderActions(
-                    playlist,
-                    false,
-                    currentTracks,
-                    false,
-                    applySort,
-                    () => currentSort
-                );
-
-                recentActivityManager.addPlaylist(playlist);
-                document.title = playlist.title || 'Artist Mix';
             }
 
             // Setup playlist search
@@ -5236,7 +5243,7 @@ export class UIRenderer {
                     this.setPageBackground(coverUrl);
                     await this.extractAndApplyColor(this.api.getCoverUrl(tracks[0].album.cover, '160'));
                 } else {
-                    imageEl.src = '/assets/appicon.png';
+                    imageEl.src = '/icon.jpg';
                     this.setPageBackground(null);
                     this.resetVibrantColor();
                 }

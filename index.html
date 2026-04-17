@@ -10,8 +10,8 @@
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="apple-mobile-web-app-capable" content="yes" />
         <link rel="manifest" href="/manifest.json" />
-        <link rel="icon" type="image/png" sizes="192x192" href="/assets/192.png" />
-        <link rel="apple-touch-icon" sizes="192x192" href="/assets/192.png" />
+        <link rel="icon" type="image/jpeg" href="/icon.jpg" />
+        <link rel="apple-touch-icon" href="/icon.jpg" />
         <base href="/" />
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="audivo" />
@@ -30,7 +30,7 @@
             content="Stream and download millions of Hi-Res FLACs, unreleased songs and music videos, all for free on audivo.in."
         />
         <meta property="og:url" content="https://audivo.in/" />
-        <meta property="og:image" content="https://audivo.in/assets/banner.jpg" />
+        <meta property="og:image" content="https://audivo.in/icon.jpg" />
         <meta property="og:image:type" content="image/jpeg" />
         <meta property="og:image:alt" content="audivo banner" />
         <meta name="twitter:card" content="summary_large_image" />
@@ -40,7 +40,7 @@
             name="twitter:description"
             content="Stream and download millions of Hi-Res FLACs, unreleased songs and music videos, all for free on audivo.in."
         />
-        <meta name="twitter:image" content="https://audivo.in/assets/banner-twitter.jpg" />
+        <meta name="twitter:image" content="https://audivo.in/icon.jpg" />
         <meta name="twitter:image:alt" content="audivo banner" />
         <script type="application/ld+json">
             {
@@ -1643,18 +1643,9 @@
         <div class="app-container">
             <aside class="sidebar">
                 <div class="sidebar-content">
-                    <div class="sidebar-logo">
-                        <a href="https://audivo.in/" class="sidebar-logo-link">
-                            <use svg="./images/monochrome-logo.svg" size="200" class="app-logo" />
-                            <span>audivo.in</span>
-                        </a>
-                        <button
-                            id="sidebar-toggle"
-                            class="btn-icon desktop-only"
-                            style="margin-left: auto"
-                            title="Collapse Sidebar"
-                        >
-                            <use svg="!lucide/chevron-left.svg" size="20" />
+                    <div class="sidebar-logo mobile-only">
+                        <button id="sidebar-close-btn" class="btn-icon mobile-only" title="Close navigation">
+                            <use svg="!lucide/x.svg" size="20" />
                         </button>
                     </div>
                     <nav class="sidebar-nav main">
@@ -1728,6 +1719,14 @@
                     <button class="hamburger-menu" id="hamburger-btn" title="Open navigation">
                         <use svg="!lucide/menu.svg" size="24" />
                     </button>
+                    <a
+                        href="/"
+                        class="top-navbar-brand"
+                        aria-label="Go to home"
+                        onclick="event.preventDefault(); window.history.pushState({}, '', '/'); window.dispatchEvent(new PopStateEvent('popstate'));"
+                    >
+                        AUDIVO
+                    </a>
                     <form class="search-bar" id="search-form">
                         <use svg="!lucide/search.svg" class="search-icon" size="24" />
                         <input
@@ -1749,6 +1748,16 @@
                         </button>
                         <div id="search-history" class="search-history" style="display: none"></div>
                     </form>
+                    <button
+                        type="button"
+                        id="topnav-download-btn"
+                        class="btn-icon topnav-download-btn desktop-only"
+                        title="Downloads"
+                        aria-label="Open downloads"
+                        onclick="window.history.pushState({}, '', '/download'); window.dispatchEvent(new PopStateEvent('popstate'));"
+                    >
+                        <use svg="!lucide/download.svg" size="20" />
+                    </button>
                     <div class="header-account-control">
                         <button
                             id="header-account-btn"
@@ -2227,6 +2236,78 @@
                                     <h4 class="card-title">Create folder</h4>
                                 </div>
                             </button>
+                        </div>
+                    </section>
+                </div>
+
+                <div id="page-download" class="page">
+                    <section class="download-page-hero">
+                        <div class="download-hero-content">
+                            <h1 class="download-page-title">
+                                <use svg="!lucide/download-cloud.svg" size="32" />
+                                Install Audivo
+                            </h1>
+                            <p class="download-hero-description">
+                                Add Audivo to your home screen as a Progressive Web App for a dedicated icon and seamless app-like experience.
+                            </p>
+                        </div>
+                        <div class="download-hero-highlight">
+                            <div class="download-benefits">
+                                <div class="benefit-item">
+                                    <use svg="!lucide/zap.svg" size="18" />
+                                    <span>Instant Access</span>
+                                </div>
+                                <div class="benefit-item">
+                                    <use svg="!lucide/smartphone.svg" size="18" />
+                                    <span>App-like Feel</span>
+                                </div>
+                                <div class="benefit-item">
+                                    <use svg="!lucide/wifi-off.svg" size="18" />
+                                    <span>Works Offline</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="content-section">
+                        <h2 class="download-section-title">Installation Guide</h2>
+
+                        <div class="download-install-grid">
+                            <article class="download-install-card">
+                                <div class="download-card-badge android-badge">
+                                    <use svg="!lucide/smartphone.svg" size="16" />
+                                </div>
+                                <div class="download-install-card-head">
+                                    <h3>Android</h3>
+                                    <span class="download-platform-label">Chrome</span>
+                                </div>
+                                <ol class="download-install-steps">
+                                    <li><span class="step-label">1</span><span>Open Audivo in Chrome</span></li>
+                                    <li><span class="step-label">2</span><span>Tap the three-dot menu in the top right</span></li>
+                                    <li><span class="step-label">3</span><span>Tap "Add to Home screen"</span></li>
+                                    <li><span class="step-label">4</span><span>Confirm by tapping "Add"</span></li>
+                                </ol>
+                            </article>
+
+                            <article class="download-install-card">
+                                <div class="download-card-badge ios-badge">
+                                    <use svg="!lucide/smartphone.svg" size="16" />
+                                </div>
+                                <div class="download-install-card-head">
+                                    <h3>iOS</h3>
+                                    <span class="download-platform-label">Safari</span>
+                                </div>
+                                <ol class="download-install-steps">
+                                    <li><span class="step-label">1</span><span>Open Audivo in Safari</span></li>
+                                    <li><span class="step-label">2</span><span>Tap the Share button (⬆ box) at the bottom</span></li>
+                                    <li><span class="step-label">3</span><span>Scroll down and tap "Add to Home Screen"</span></li>
+                                    <li><span class="step-label">4</span><span>Confirm by tapping "Add"</span></li>
+                                </ol>
+                            </article>
+                        </div>
+
+                        <div class="download-page-footer">
+                            <p>✓ Audivo will instantly appear on your home screen like any other app.</p>
                         </div>
                     </section>
                 </div>
@@ -2718,7 +2799,7 @@
                     <div class="profile-header-container">
                         <div class="profile-banner" id="profile-banner"></div>
                         <div class="profile-info-section">
-                            <img id="profile-avatar" src="/assets/appicon.png" class="profile-avatar" alt="Avatar" />
+                            <img id="profile-avatar" src="/icon.jpg" class="profile-avatar" alt="Avatar" />
                             <div class="profile-details">
                                 <h1 id="profile-display-name">User</h1>
                                 <div id="profile-username" class="profile-username">@username</div>
@@ -2805,6 +2886,13 @@
                     <div class="settings-tab-content active" id="settings-tab-appearance">
                         <div class="settings-list">
                             <div class="settings-group">
+                                <div class="setting-item">
+                                    <div class="info">
+                                        <span class="label">Theme Change Lock</span>
+                                        <span class="description">Theme changes are currently locked</span>
+                                    </div>
+                                    <input id="theme-lock-toggle" type="checkbox" checked disabled aria-disabled="true" />
+                                </div>
                                 <div class="setting-item">
                                     <div class="info">
                                         <span class="label">Theme</span>
@@ -5542,53 +5630,99 @@
                 </div>
 
                 <div id="page-about" class="page">
-                    <h2 class="section-title" style="text-align: center">About audivo.in</h2>
-                    <div class="about-content">
-                        <p class="about-description">
-                            audivo.in is a lightweight, privacy-focused music streaming client designed for
-                            high-fidelity audio playback. Built with modern web technologies, it provides a clean,
-                            distraction-free listening experience.
-                        </p>
-
-                        <div class="about-features">
-                            <h4>What Makes audivo.in Different</h4>
-                            <ul>
-                                <li>Fast, minimal interface focused on listening over clutter</li>
-                                <li>Cross-device library syncing with account-aware experiences</li>
-                                <li>Advanced playback controls for quality-focused users</li>
-                                <li>Local file playback support alongside online streaming</li>
-                                <li>Community-driven improvements and transparent updates</li>
-                            </ul>
-                        </div>
-
-                        <div class="about-links">
-                            <a
-                                class="github-link"
-                                href="https://audivo.in/premium"
-                                target="_self"
-                                rel="noopener noreferrer"
-                            >
-                                <use svg="!lucide/star.svg" size="18" />
-                                <span>See Premium Preview</span>
-                            </a>
-                        </div>
-
-                        <div class="about-footer">
-                            <p class="disclaimer">
-                                audivo.in is an independent client and is not affiliated with, endorsed by, or
-                                sponsored by TIDAL or any other music streaming platform.
-                            </p>
-                            <p class="disclaimer">
-                                This application does not host, store, or distribute media files. <br />
-                                Content shown or accessed through audivo.in is delivered by third-party services and
-                                publicly available APIs. <br />
-                                We do not own, control, or operate those external sources, and we cannot guarantee the
-                                accuracy, availability, licensing status, or legality of third-party content. <br />
-                                Users are fully responsible for how they use this application and for complying with all
-                                laws and regulations applicable in their jurisdiction.
+                    <section class="about-page-hero">
+                        <div class="about-hero-content">
+                            <h1 class="about-page-title">
+                                <use svg="!lucide/music.svg" size="32" />
+                                About Audivo
+                            </h1>
+                            <p class="about-hero-description">
+                                A lightweight, privacy-focused music streaming client designed for high-fidelity audio playback and a clean listening experience.
                             </p>
                         </div>
-                    </div>
+                        <div class="about-hero-highlight">
+                            <div class="about-highlights">
+                                <div class="highlight-item">
+                                    <use svg="!lucide/feather.svg" size="18" />
+                                    <span>Lightweight</span>
+                                </div>
+                                <div class="highlight-item">
+                                    <use svg="!lucide/lock.svg" size="18" />
+                                    <span>Privacy-Focused</span>
+                                </div>
+                                <div class="highlight-item">
+                                    <use svg="!lucide/zap.svg" size="18" />
+                                    <span>Fast & Minimal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+
+                    <section class="content-section">
+                        <h2 class="about-section-title">What Makes Audivo Different</h2>
+
+                        <div class="about-features-grid">
+                            <article class="about-feature-card">
+                                <div class="about-feature-icon">
+                                    <use svg="!lucide/layout-grid.svg" size="24" />
+                                </div>
+                                <h3>Clean Interface</h3>
+                                <p>Fast, minimal design focused on listening over clutter. Distraction-free playback experience.</p>
+                            </article>
+
+                            <article class="about-feature-card">
+                                <div class="about-feature-icon">
+                                    <use svg="!lucide/rotate-cw.svg" size="24" />
+                                </div>
+                                <h3>Cross-Device Sync</h3>
+                                <p>Seamless library syncing with account-aware experiences. Your music follows you everywhere.</p>
+                            </article>
+
+                            <article class="about-feature-card">
+                                <div class="about-feature-icon">
+                                    <use svg="!lucide/volume-2.svg" size="24" />
+                                </div>
+                                <h3>Advanced Controls</h3>
+                                <p>Quality-focused playback controls. 24-bit Hi-Res audio, equalizer, and advanced settings.</p>
+                            </article>
+
+                            <article class="about-feature-card">
+                                <div class="about-feature-icon">
+                                    <use svg="!lucide/folder.svg" size="24" />
+                                </div>
+                                <h3>Local Files</h3>
+                                <p>Play local FLAC, MP3, and other formats alongside online streaming. Full library control.</p>
+                            </article>
+
+                            <article class="about-feature-card">
+                                <div class="about-feature-icon">
+                                    <use svg="!lucide/users.svg" size="24" />
+                                </div>
+                                <h3>Community-Driven</h3>
+                                <p>Transparent updates and community-driven improvements. Open for feedback and suggestions.</p>
+                            </article>
+
+                            <article class="about-feature-card">
+                                <div class="about-feature-icon">
+                                    <use svg="!lucide/shield.svg" size="24" />
+                                </div>
+                                <h3>Privacy First</h3>
+                                <p>Your data stays private. No tracking or analytics. Only what you need to stream music.</p>
+                            </article>
+                        </div>
+                    </section>
+
+                    <section class="content-section">
+                        <div class="about-legal-notice">
+                            <h3>Important Notice</h3>
+                            <p>
+                                Audivo is an independent client and is <strong>not affiliated with, endorsed by, or sponsored by</strong> TIDAL or any other music streaming platform.
+                            </p>
+                            <p>
+                                This application does not host, store, or distribute media files. Content shown or accessed through Audivo is delivered by third-party services and publicly available APIs. We do not own, control, or operate those external sources. Users are fully responsible for complying with all laws and regulations applicable in their jurisdiction.
+                            </p>
+                        </div>
+                    </section>
                 </div>
                 <div id="page-account" class="page">
                     <h2 class="section-title" style="text-align: center">Sign Up / Sign In</h2>
@@ -5689,7 +5823,7 @@
 
             <footer class="now-playing-bar">
                 <div class="track-info">
-                    <img src="/assets/appicon.png" alt="Current Track Cover" class="cover" fetchpriority="high" />
+                    <img src="/icon.jpg" alt="Current Track Cover" class="cover" fetchpriority="high" />
                     <div class="details">
                         <div class="title">Select a song</div>
                         <div class="album"></div>
