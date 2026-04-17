@@ -1,5 +1,5 @@
 // js/accounts/auth.js
-import { auth, getSupabaseAnonKey, getSupabaseUrl, normalizeSupabaseUser, supabase } from './config.js';
+import { auth, getAuthRedirectUrl, getSupabaseAnonKey, getSupabaseUrl, normalizeSupabaseUser, supabase } from './config.js';
 
 export class AuthManager {
     constructor() {
@@ -56,7 +56,7 @@ export class AuthManager {
 
     async signInWithGoogle() {
         try {
-            await auth.createOAuth2Session('google', window.location.origin + '/index.html?oauth=1');
+            await auth.createOAuth2Session('google', getAuthRedirectUrl('/index.html', { oauth: 1 }));
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -65,7 +65,7 @@ export class AuthManager {
 
     async signInWithGitHub() {
         try {
-            await auth.createOAuth2Session('github', window.location.origin + '/index.html?oauth=1');
+            await auth.createOAuth2Session('github', getAuthRedirectUrl('/index.html', { oauth: 1 }));
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -74,7 +74,7 @@ export class AuthManager {
 
     async signInWithSpotify() {
         try {
-            await auth.createOAuth2Session('spotify', window.location.origin + '/index.html?oauth=1');
+            await auth.createOAuth2Session('spotify', getAuthRedirectUrl('/index.html', { oauth: 1 }));
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -83,7 +83,7 @@ export class AuthManager {
 
     async signInWithDiscord() {
         try {
-            await auth.createOAuth2Session('discord', window.location.origin + '/index.html?oauth=1');
+            await auth.createOAuth2Session('discord', getAuthRedirectUrl('/index.html', { oauth: 1 }));
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);

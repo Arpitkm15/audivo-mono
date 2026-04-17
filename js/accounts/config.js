@@ -21,6 +21,20 @@ export const getSupabaseAnonKey = () => {
     return DEFAULT_SUPABASE_ANON_KEY;
 };
 
+export const getAuthRedirectUrl = (path = '/index.html', params = {}) => {
+    const configuredBase = typeof window.__AUTH_REDIRECT_BASE_URL__ === 'string' ? window.__AUTH_REDIRECT_BASE_URL__.trim() : '';
+    const base = configuredBase || window.location.origin;
+    const url = new URL(path, base.endsWith('/') ? base : `${base}/`);
+
+    Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+            url.searchParams.set(key, String(value));
+        }
+    });
+
+    return url.toString();
+};
+
 export const supabase = createClient(getSupabaseUrl(), getSupabaseAnonKey(), {
     auth: {
         autoRefreshToken: true,
@@ -75,7 +89,7 @@ const auth = {
             email,
             password,
             options: {
-                emailRedirectTo: window.location.origin + '/index.html?oauth=1',
+                emailRedirectTo: getAuthRedirectUrl('/index.html', { oauth: 1 }),
             },
         });
         if (error) throw error;

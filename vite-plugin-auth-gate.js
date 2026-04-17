@@ -22,6 +22,7 @@ function buildInjectionScript(env) {
     const AUTH_ENABLED = (env.AUTH_ENABLED ?? 'false') !== 'false';
     const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
     const SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY;
+    const AUTH_REDIRECT_BASE_URL = env.NEXT_PUBLIC_AUTH_REDIRECT_BASE_URL || env.AUTH_REDIRECT_BASE_URL;
     const AUTH_GOOGLE_ENABLED = env.AUTH_GOOGLE_ENABLED;
     const AUTH_EMAIL_ENABLED = env.AUTH_EMAIL_ENABLED;
 
@@ -39,6 +40,9 @@ function buildInjectionScript(env) {
     }
     if (SUPABASE_URL) flags.push(`window.__SUPABASE_URL__=${JSON.stringify(SUPABASE_URL)}`);
     if (SUPABASE_ANON_KEY) flags.push(`window.__SUPABASE_ANON_KEY__=${JSON.stringify(SUPABASE_ANON_KEY)}`);
+    if (AUTH_REDIRECT_BASE_URL) {
+        flags.push(`window.__AUTH_REDIRECT_BASE_URL__=${JSON.stringify(AUTH_REDIRECT_BASE_URL)}`);
+    }
 
     return flags.length > 0 ? `<script>${flags.join(';')};</script>` : null;
 }
