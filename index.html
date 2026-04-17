@@ -1761,7 +1761,7 @@
                     >
                         <use svg="!lucide/user.svg" size="20" />
                     </button>
-                    <div class="header-account-control">
+                    <div class="header-account-control" style="display: none">
                         <button
                             id="header-account-btn"
                             class="btn-icon"
@@ -5807,38 +5807,65 @@
                 <div id="page-account" class="page">
                     <section class="account-auth-shell">
                         <div class="account-auth-card">
-                            <div class="account-auth-badge">audivo account</div>
-                            <h2 class="section-title account-auth-title">Sign In / Sign Up</h2>
-                            <p class="account-auth-subtitle">
-                                Continue with Google to sync your likes, playlists, and history across devices.
-                            </p>
+                            <div class="account-auth-main">
+                                <div class="account-auth-badge">audivo account</div>
+                                <h2 class="section-title account-auth-title">Your Music Identity, Synced Everywhere</h2>
+                                <p class="account-auth-subtitle">
+                                    Sign in to keep likes, playlists, and listening history in one place across all your devices.
+                                </p>
+                                <p id="account-auth-welcome" class="account-auth-welcome"></p>
 
-                            <div class="account-auth-actions" id="auth-buttons-container">
-                                <button id="auth-connect-btn" class="btn-primary account-google-btn">
-                                    <use svg="!lucide/log-in.svg" size="18" />
-                                    <span>Login with Google</span>
-                                </button>
-                                <button id="view-my-profile-btn" class="btn-secondary" style="display: none">
-                                    View My Profile
-                                </button>
+                                <div class="account-auth-pill-row" aria-hidden="true">
+                                    <div class="account-auth-pill">
+                                        <use svg="!lucide/cloud.svg" size="14" />
+                                        <span>Secure cloud sync</span>
+                                    </div>
+                                    <div class="account-auth-pill">
+                                        <use svg="!lucide/shield.svg" size="14" />
+                                        <span>Privacy-first profile</span>
+                                    </div>
+                                </div>
+
+                                <div class="account-auth-actions" id="auth-buttons-container">
+                                    <button id="auth-connect-btn" class="btn-primary account-google-btn">
+                                        <use svg="!lucide/log-in.svg" size="18" />
+                                        <span>Continue with Google</span>
+                                    </button>
+                                    <button id="view-my-profile-btn" class="btn-secondary" style="display: none">
+                                        View My Profile
+                                    </button>
+                                </div>
+
+                                <p id="auth-status" class="account-auth-status">Sync your library across devices</p>
                             </div>
 
-                            <p id="auth-status" class="account-auth-status">Sync your library across devices</p>
+                            <aside class="account-auth-side" aria-label="Account highlights">
+                                <div class="account-auth-side-title">Why create an account</div>
 
-                            <div class="account-auth-feature-grid">
-                                <div class="account-auth-feature-item">Cloud-synced likes</div>
-                                <div class="account-auth-feature-item">Playlists on every device</div>
-                                <div class="account-auth-feature-item">History backup</div>
-                            </div>
+                                <div class="account-auth-feature-grid">
+                                    <div class="account-auth-feature-item">
+                                        <use svg="!lucide/cloud-check.svg" size="16" />
+                                        <span>Cloud-synced likes</span>
+                                    </div>
+                                    <div class="account-auth-feature-item">
+                                        <use svg="!lucide/list-music.svg" size="16" />
+                                        <span>Playlists on every device</span>
+                                    </div>
+                                    <div class="account-auth-feature-item">
+                                        <use svg="!lucide/history.svg" size="16" />
+                                        <span>History backup</span>
+                                    </div>
+                                </div>
 
-                            <div class="account-auth-note">
-                                <use svg="!lucide/shield-check.svg" size="16" />
-                                <span>We only store music sync data and a randomized account ID.</span>
-                            </div>
+                                <div class="account-auth-note">
+                                    <use svg="!lucide/shield-check.svg" size="16" />
+                                    <span>Only sync data is stored, with a randomized account ID.</span>
+                                </div>
 
-                            <a id="advanced-config-link" class="btn-secondary account-auth-advanced" href="/settings"
-                                >Advanced: Custom Configuration</a
-                            >
+                                <a id="advanced-config-link" class="btn-secondary account-auth-advanced" href="/settings"
+                                    >Advanced Configuration</a
+                                >
+                            </aside>
                         </div>
                     </section>
 
@@ -5933,15 +5960,6 @@
                             style="display: none"
                         ></button>
                         <button
-                            id="now-playing-add-playlist-btn"
-                            title="Add to playlist"
-                            class="desktop-only"
-                            aria-label="Add to playlist"
-                        >
-                            <use svg="!lucide/list-plus.svg" size="20" />
-                        </button>
-
-                        <button
                             id="now-playing-mix-btn"
                             class="mix-btn"
                             data-action="track-mix"
@@ -5950,29 +5968,15 @@
                         >
                             <use svg="./images/mix.svg" size="20" />
                         </button>
-                        <button id="toggle-lyrics-btn" title="Lyrics" style="display: none" aria-label="Lyrics">
-                            <use svg="!lucide/mic-vocal.svg" size="20" />
-                        </button>
-                        <button id="download-current-btn" title="Download current track" class="desktop-only">
-                            <use svg="!lucide/download.svg" size="20" />
-                        </button>
-                        <button id="cast-btn" title="Cast">
-                            <use svg="!lucide/cast.svg" size="20" />
-                        </button>
-
-                        <button
-                            id="mobile-add-playlist-btn"
-                            class="mobile-only"
-                            title="Add to playlist"
-                            aria-label="Add to playlist"
-                        >
-                            <use svg="!lucide/list-plus.svg" size="20" />
-                        </button>
+                        
                         <button id="sleep-timer-btn" title="Sleep Timer" class="mobile-only">
                             <use svg="!lucide/clock.svg" size="20" />
                         </button>
                         <button id="queue-btn" title="Queue">
                             <use svg="!lucide/list.svg" size="24" />
+                        </button>
+                        <button id="mini-player-toggle-btn" title="Mini Player" aria-label="Mini Player">
+                            <use svg="!lucide/picture-in-picture-2.svg" size="20" />
                         </button>
                     </div>
                     <div class="volume-slider-row desktop-only">
@@ -5986,6 +5990,42 @@
                     </div>
                 </div>
             </footer>
+
+            <div id="mini-player" class="mini-player" aria-hidden="true">
+                <div class="mini-player-media">
+                    <img id="mini-player-cover" src="/icon.jpg" alt="Mini Player Cover" class="mini-player-cover" />
+                    <div class="mini-player-controls mini-player-controls-overlay">
+                        <button id="mini-player-like-btn" class="mini-player-control-btn" title="Like" aria-label="Like">
+                            <use svg="!lucide/heart.svg" size="18" />
+                        </button>
+                        <button id="mini-player-prev-btn" class="mini-player-control-btn" title="Previous" aria-label="Previous">
+                            <use svg="!lucide/skip-back.svg" size="18" />
+                        </button>
+                        <button
+                            id="mini-player-play-btn"
+                            class="mini-player-control-btn mini-player-play-btn"
+                            title="Play/Pause"
+                            aria-label="Play/Pause"
+                        >
+                            <use svg="!lucide/play.svg" size="18" />
+                        </button>
+                        <button id="mini-player-next-btn" class="mini-player-control-btn" title="Next" aria-label="Next">
+                            <use svg="!lucide/skip-forward.svg" size="18" />
+                        </button>
+                    </div>
+                </div>
+                <div class="mini-player-progress-meta">
+                    <span id="mini-player-current-time">0:00</span>
+                    <span id="mini-player-total-duration">0:00</span>
+                </div>
+                <div class="mini-player-progress-track">
+                    <div id="mini-player-progress-fill" class="mini-player-progress-fill"></div>
+                </div>
+                <div class="mini-player-text mini-player-bottom-text">
+                    <div id="mini-player-title" class="mini-player-title">Select a song</div>
+                    <div id="mini-player-artist" class="mini-player-artist"></div>
+                </div>
+            </div>
         </div>
         <script type="module" src="/js/app.js"></script>
     </body>

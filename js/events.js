@@ -28,6 +28,7 @@ import { partyManager } from './listening-party.js';
 import { MusicAPI } from './music-api.js';
 import { LyricsManager } from './lyrics.js';
 import { Player } from './player.js';
+import { authManager } from './accounts/auth.js';
 
 let currentTrackIdForWaveform = null;
 
@@ -242,6 +243,10 @@ async function showMultiSelectPlaylistModal(tracks) {
     modal.querySelector('.create-new-playlist').addEventListener('click', async () => {
         const name = prompt('Playlist name:');
         if (name) {
+            if (!authManager?.user) {
+                showNotification('You must login to create playlist.');
+                return;
+            }
             await db.createPlaylist(name, tracks).then((_playlist) => {
                 showNotification(`Created playlist "${name}" with ${tracks.length} tracks`);
                 closeModal();
@@ -1354,6 +1359,11 @@ export async function handleTrackAction(
     } else if (action === 'download') {
         await downloadTrackWithMetadata(item, downloadQualitySettings.getQuality(), api, lyricsManager);
     } else if (action === 'toggle-like') {
+        if (!authManager?.user) {
+            showNotification('You must login to like songs and playlists.');
+            return;
+        }
+
         const added = await db.toggleFavorite(type, item);
         await syncManager.syncLibraryItem(type, item, added);
 
@@ -2465,6 +2475,12 @@ export function initializeTrackInteractions(player, api, mainContent, contextMen
                         clearSelection();
                         break;
                     case 'toggle-like':
+                        if (!authManager?.user) {
+                            showNotification('You must login to like songs and playlists.');
+                            clearSelection();
+                            break;
+                        }
+
                         selectedTracks.forEach(async (t) => {
                             const added = await db.toggleFavorite('track', t);
                             await syncManager.syncLibraryItem('track', t, added);

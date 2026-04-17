@@ -11,6 +11,7 @@ import { sidePanelManager } from './side-panel.js';
 import { downloadQualitySettings, contentBlockingSettings } from './storage.js';
 import { db } from './db.js';
 import { syncManager } from './accounts/supabase-sync.js';
+import { authManager } from './accounts/auth.js';
 import { showNotification, downloadTracks } from './downloads.js';
 import {
     SVG_CLOSE,
@@ -153,6 +154,11 @@ export function initializeUIInteractions(player, api, ui) {
         const likeBtn = container.querySelector('#like-queue-btn');
         if (likeBtn) {
             likeBtn.addEventListener('click', async () => {
+                if (!authManager?.user) {
+                    showNotification('You must login to like songs and playlists.');
+                    return;
+                }
+
                 let addedCount = 0;
                 for (const track of currentQueue) {
                     const wasAdded = await db.toggleFavorite('track', track);
@@ -307,6 +313,11 @@ export function initializeUIInteractions(player, api, ui) {
             const likeBtn = e.target.closest('.queue-like-btn');
             if (likeBtn && likeBtn.dataset.action === 'toggle-like') {
                 e.stopPropagation();
+                if (!authManager?.user) {
+                    showNotification('You must login to like songs and playlists.');
+                    return;
+                }
+
                 const track = player.getCurrentQueue()[index];
                 if (track) {
                     const added = await db.toggleFavorite('track', track);

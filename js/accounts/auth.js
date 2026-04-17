@@ -163,6 +163,10 @@ export class AuthManager {
         const connectBtn = document.getElementById('auth-connect-btn');
         const clearDataBtn = document.getElementById('auth-clear-cloud-btn');
         const statusText = document.getElementById('auth-status');
+        const accountPage = document.getElementById('page-account');
+        const accountTitle = accountPage?.querySelector('.account-auth-title');
+        const accountSubtitle = accountPage?.querySelector('.account-auth-subtitle');
+        const accountWelcome = document.getElementById('account-auth-welcome');
         const emailContainer = document.getElementById('email-auth-container');
         const emailToggleBtn = document.getElementById('toggle-email-auth-btn');
         const githubBtn = document.getElementById('auth-github-btn');
@@ -171,6 +175,17 @@ export class AuthManager {
         if (!connectBtn) return;
 
         if (window.__AUTH_GATE__) {
+            if (accountPage) accountPage.dataset.authState = user ? 'signed-in' : 'signed-out';
+            if (accountTitle) accountTitle.textContent = user ? 'Manage Your Account' : 'Sign In / Sign Up';
+            if (accountSubtitle) {
+                accountSubtitle.textContent = user
+                    ? 'Update your profile, security preferences, and cloud sync settings from one place.'
+                    : 'Continue with Google to sync your likes, playlists, and history across devices.';
+            }
+            if (accountWelcome) {
+                accountWelcome.textContent = user?.email ? `Signed in as ${user.email}` : '';
+            }
+
             connectBtn.textContent = 'Sign Out';
             connectBtn.classList.add('danger');
             connectBtn.onclick = () => this.signOut();
@@ -181,7 +196,6 @@ export class AuthManager {
             if (discordBtn) discordBtn.style.display = 'none';
             if (statusText) statusText.textContent = user ? `Signed in as ${user.email}` : 'Signed in';
 
-            const accountPage = document.getElementById('page-account');
             if (accountPage) {
                 const title = accountPage.querySelector('.section-title');
                 if (title) title.textContent = 'Account';
@@ -205,6 +219,16 @@ export class AuthManager {
         }
 
         if (user) {
+            if (accountPage) accountPage.dataset.authState = 'signed-in';
+            if (accountTitle) accountTitle.textContent = 'Manage Your Account';
+            if (accountSubtitle) {
+                accountSubtitle.textContent =
+                    'You are connected. Manage your profile, privacy options, and cloud sync in one place.';
+            }
+            if (accountWelcome) {
+                accountWelcome.textContent = user.email ? `Welcome back, ${user.email}` : 'Welcome back';
+            }
+
             connectBtn.textContent = 'Sign Out';
             connectBtn.classList.add('danger');
             connectBtn.onclick = () => this.signOut();
@@ -216,6 +240,16 @@ export class AuthManager {
             if (discordBtn) discordBtn.style.display = 'none';
             if (statusText) statusText.textContent = `Signed in as ${user.email}`;
         } else {
+            if (accountPage) accountPage.dataset.authState = 'signed-out';
+            if (accountTitle) accountTitle.textContent = 'Your Music Identity, Synced Everywhere';
+            if (accountSubtitle) {
+                accountSubtitle.textContent =
+                    'Sign in to keep likes, playlists, and listening history in one place across all your devices.';
+            }
+            if (accountWelcome) {
+                accountWelcome.textContent = '';
+            }
+
             connectBtn.textContent = 'Connect with Google';
             connectBtn.classList.remove('danger');
             connectBtn.onclick = () => this.signInWithGoogle();

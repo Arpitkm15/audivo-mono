@@ -360,6 +360,470 @@ function initializeKeyboardShortcuts(player, _audioPlayer) {
     });
 }
 
+function initializeMiniPlayer(player, lyricsManager) {
+    const toggleBtn = document.getElementById('mini-player-toggle-btn');
+    const miniPlayer = document.getElementById('mini-player');
+    const coverEl = document.getElementById('mini-player-cover');
+    const titleEl = document.getElementById('mini-player-title');
+    const artistEl = document.getElementById('mini-player-artist');
+    const miniCurrentTimeEl = document.getElementById('mini-player-current-time');
+    const miniTotalDurationEl = document.getElementById('mini-player-total-duration');
+    const miniProgressFill = document.getElementById('mini-player-progress-fill');
+    const likeBtn = document.getElementById('mini-player-like-btn');
+    const prevBtn = document.getElementById('mini-player-prev-btn');
+    const playBtn = document.getElementById('mini-player-play-btn');
+    const nextBtn = document.getElementById('mini-player-next-btn');
+    const nowPlayingLikeBtn = document.getElementById('now-playing-like-btn');
+    const nowPlayingPlayBtn = document.querySelector('.now-playing-bar .play-pause-btn');
+    const nowPlayingCurrentTimeEl = document.getElementById('current-time');
+    const nowPlayingTotalDurationEl = document.getElementById('total-duration');
+    const nowPlayingProgressFillEl = document.getElementById('progress-fill');
+    const prevMainBtn = document.getElementById('prev-btn');
+    const nextMainBtn = document.getElementById('next-btn');
+    const MINI_PLAYER_ICON_HTML = '<use svg="!lucide/picture-in-picture-2.svg" size="20" />';
+    const FULLSCREEN_ICON_HTML =
+        '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/></svg>';
+    const isMobileViewport = () => window.matchMedia('(max-width: 768px)').matches;
+
+    if (
+        !toggleBtn ||
+        !miniPlayer ||
+        !coverEl ||
+        !titleEl ||
+        !artistEl ||
+        !miniCurrentTimeEl ||
+        !miniTotalDurationEl ||
+        !miniProgressFill ||
+        !likeBtn ||
+        !prevBtn ||
+        !playBtn ||
+        !nextBtn
+    )
+        return;
+
+    const resolveArtistText = (track) => {
+        if (!track) return '';
+        if (Array.isArray(track.artists) && track.artists.length > 0) {
+            return track.artists.map((artist) => artist?.name).filter(Boolean).join(', ');
+        }
+        return track.artist?.name || '';
+    };
+
+    const resolveCoverUrl = (track) => {
+        if (!track) return '/icon.jpg';
+        const videoCoverUrl = track.videoUrl || track.videoCoverUrl || track.album?.videoCoverUrl || null;
+        if (videoCoverUrl) return videoCoverUrl;
+        const coverId = track.image || track.cover || track.album?.cover;
+        return coverId ? MusicAPI.instance.getCoverUrl(coverId) : '/icon.jpg';
+    };
+
+    const syncMiniPlayerMeta = () => {
+        const track = player.currentTrack;
+        if (!track) {
+            titleEl.textContent = 'Select a song';
+            artistEl.textContent = '';
+            coverEl.src = '/icon.jpg';
+            if (pipElements) {
+                pipElements.title.textContent = 'Select a song';
+                pipElements.artist.textContent = '';
+                pipElements.cover.src = '/icon.jpg';
+            }
+            return;
+        }
+
+        const title = track.title || 'Unknown Title';
+        const artist = resolveArtistText(track);
+        const cover = resolveCoverUrl(track);
+
+        titleEl.textContent = title;
+        artistEl.textContent = artist;
+        coverEl.src = cover;
+
+        if (pipElements) {
+            pipElements.title.textContent = title;
+            pipElements.artist.textContent = artist;
+            pipElements.cover.src = cover;
+        }
+    };
+
+    const syncMiniPlayerPlayState = () => {
+        if (nowPlayingPlayBtn?.innerHTML) {
+            playBtn.innerHTML = nowPlayingPlayBtn.innerHTML;
+            if (pipElements?.playBtn) {
+                pipElements.playBtn.innerHTML = nowPlayingPlayBtn.innerHTML;
+            }
+        }
+    };
+
+    const syncMiniPlayerLikeState = () => {
+        if (!nowPlayingLikeBtn) return;
+
+        if (nowPlayingLikeBtn?.innerHTML) {
+            likeBtn.innerHTML = nowPlayingLikeBtn.innerHTML;
+            if (pipElements?.likeBtn) {
+                pipElements.likeBtn.innerHTML = nowPlayingLikeBtn.innerHTML;
+            }
+        }
+
+        const isLiked = nowPlayingLikeBtn.classList.contains('active');
+        likeBtn.classList.toggle('active', isLiked);
+        if (pipElements?.likeBtn) {
+            pipElements.likeBtn.classList.toggle('active', isLiked);
+        }
+    };
+
+    const syncMiniPlayerProgress = () => {
+        if (nowPlayingCurrentTimeEl?.textContent) {
+            miniCurrentTimeEl.textContent = nowPlayingCurrentTimeEl.textContent;
+            if (pipElements?.currentTime) {
+                pipElements.currentTime.textContent = nowPlayingCurrentTimeEl.textContent;
+            }
+        }
+        if (nowPlayingTotalDurationEl?.textContent) {
+            miniTotalDurationEl.textContent = nowPlayingTotalDurationEl.textContent;
+            if (pipElements?.totalDuration) {
+                pipElements.totalDuration.textContent = nowPlayingTotalDurationEl.textContent;
+            }
+        }
+        const progressWidth = nowPlayingProgressFillEl?.style?.width;
+        miniProgressFill.style.width = progressWidth || '0%';
+        if (pipElements?.progressFill) {
+            pipElements.progressFill.style.width = progressWidth || '0%';
+        }
+    };
+
+    let pipWindow = null;
+    let pipElements = null;
+    const canUseDocumentPiP =
+        typeof window !== 'undefined' &&
+        'documentPictureInPicture' in window &&
+        typeof window.documentPictureInPicture?.requestWindow === 'function';
+
+    const setToggleState = (open) => {
+        if (isMobileViewport()) {
+            toggleBtn.innerHTML = FULLSCREEN_ICON_HTML;
+            toggleBtn.classList.remove('active');
+            toggleBtn.title = 'Fullscreen';
+            toggleBtn.setAttribute('aria-label', 'Fullscreen');
+            return;
+        }
+
+        toggleBtn.innerHTML = MINI_PLAYER_ICON_HTML;
+        toggleBtn.classList.toggle('active', open);
+        toggleBtn.title = open ? 'Close Mini Player' : 'Mini Player';
+        toggleBtn.setAttribute('aria-label', open ? 'Close Mini Player' : 'Mini Player');
+    };
+
+    const setOpen = (open) => {
+        miniPlayer.classList.toggle('active', open);
+        miniPlayer.setAttribute('aria-hidden', open ? 'false' : 'true');
+        setToggleState(open);
+        if (open) {
+            syncMiniPlayerMeta();
+            syncMiniPlayerPlayState();
+        }
+    };
+
+    const closePipWindow = () => {
+        if (pipWindow && !pipWindow.closed) {
+            pipWindow.close();
+        }
+        pipWindow = null;
+        pipElements = null;
+        setToggleState(false);
+    };
+
+    const openPipWindow = async () => {
+        const docPip = window.documentPictureInPicture;
+        if (!docPip) return false;
+
+        if (pipWindow && !pipWindow.closed) {
+            closePipWindow();
+            return true;
+        }
+
+        pipWindow = await docPip.requestWindow({ width: 360, height: 420 });
+        const pipDoc = pipWindow.document;
+
+        pipDoc.body.innerHTML = `
+            <div class="pip-shell">
+                <div class="pip-media">
+                    <img id="pip-cover" class="pip-cover" src="/icon.jpg" alt="Cover">
+                    <div class="pip-controls">
+                        <button id="pip-like" class="pip-btn" aria-label="Like"></button>
+                        <button id="pip-prev" class="pip-btn" aria-label="Previous"></button>
+                        <button id="pip-play" class="pip-btn pip-play" aria-label="Play/Pause"></button>
+                        <button id="pip-next" class="pip-btn" aria-label="Next"></button>
+                    </div>
+                </div>
+                <div class="pip-progress-meta">
+                    <span id="pip-current-time">0:00</span>
+                    <span id="pip-total-duration">0:00</span>
+                </div>
+                <div class="pip-progress-track">
+                    <div id="pip-progress-fill" class="pip-progress-fill"></div>
+                </div>
+                <div class="pip-text">
+                    <div id="pip-title" class="pip-title">Select a song</div>
+                    <div id="pip-artist" class="pip-artist"></div>
+                </div>
+            </div>
+        `;
+
+        const styleEl = pipDoc.createElement('style');
+        styleEl.textContent = `
+            :root { color-scheme: dark; }
+            html, body { margin: 0; padding: 0; width: 100%; height: 100%; font-family: Inter, sans-serif; background: #0b0b0b; color: #ffffff; }
+            .pip-shell {
+                box-sizing: border-box;
+                width: 100%;
+                height: 100%;
+                padding: 10px;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+                background: linear-gradient(180deg, #121212 0%, #090909 100%);
+            }
+            .pip-media {
+                position: relative;
+                border-radius: 10px;
+                overflow: hidden;
+                border: 1px solid rgba(255,255,255,0.08);
+                background: #111;
+            }
+            .pip-cover {
+                width: 100%;
+                height: 250px;
+                object-fit: cover;
+                display: block;
+                background: #212121;
+            }
+            .pip-controls {
+                position: absolute;
+                left: 50%;
+                bottom: 8px;
+                transform: translateX(-50%);
+                width: calc(100% - 14px);
+                padding: 4px 5px;
+                border-radius: 999px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 6px;
+                background: linear-gradient(180deg, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.68) 100%);
+                backdrop-filter: blur(5px);
+            }
+            .pip-btn {
+                width: 31px;
+                height: 31px;
+                border: none;
+                border-radius: 999px;
+                background: transparent;
+                color: rgba(255,255,255,0.8);
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+            }
+            .pip-btn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+            .pip-btn.active { color: #ff4f6d; }
+            .pip-play {
+                width: 43px;
+                height: 43px;
+                background: #fff;
+                color: #0f0f0f;
+                box-shadow: 0 4px 10px rgba(0,0,0,0.32);
+            }
+            .pip-play:hover { background: #fff; color: #050505; filter: brightness(0.98); }
+            .pip-btn svg { width: 18px; height: 18px; }
+            .pip-progress-meta {
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                font-size: 12px;
+                color: rgba(255,255,255,0.78);
+                padding: 0 2px;
+            }
+            .pip-progress-track {
+                width: 100%;
+                height: 4px;
+                border-radius: 999px;
+                background: rgba(255,255,255,0.2);
+                overflow: hidden;
+            }
+            .pip-progress-fill {
+                width: 0%;
+                height: 100%;
+                border-radius: inherit;
+                background: #fff;
+                transition: width 0.12s linear;
+            }
+            .pip-text { min-width: 0; padding: 1px 2px 0; }
+            .pip-title {
+                font-size: 16px;
+                font-weight: 700;
+                line-height: 1.22;
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                color: #f8f8f8;
+            }
+            .pip-artist {
+                margin-top: 2px;
+                font-size: 13px;
+                color: rgba(255,255,255,0.72);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        `;
+        pipDoc.head.appendChild(styleEl);
+
+        pipElements = {
+            cover: pipDoc.getElementById('pip-cover'),
+            title: pipDoc.getElementById('pip-title'),
+            artist: pipDoc.getElementById('pip-artist'),
+            currentTime: pipDoc.getElementById('pip-current-time'),
+            totalDuration: pipDoc.getElementById('pip-total-duration'),
+            progressFill: pipDoc.getElementById('pip-progress-fill'),
+            likeBtn: pipDoc.getElementById('pip-like'),
+            prevBtn: pipDoc.getElementById('pip-prev'),
+            playBtn: pipDoc.getElementById('pip-play'),
+            nextBtn: pipDoc.getElementById('pip-next'),
+        };
+
+        pipElements.likeBtn.innerHTML = nowPlayingLikeBtn?.innerHTML || '';
+        pipElements.prevBtn.innerHTML = prevMainBtn?.innerHTML || '';
+        pipElements.playBtn.innerHTML = nowPlayingPlayBtn?.innerHTML || '';
+        pipElements.nextBtn.innerHTML = nextMainBtn?.innerHTML || '';
+
+        pipElements.likeBtn.addEventListener('click', () => nowPlayingLikeBtn?.click());
+        pipElements.prevBtn.addEventListener('click', () => player.playPrev());
+        pipElements.playBtn.addEventListener('click', () => player.handlePlayPause());
+        pipElements.nextBtn.addEventListener('click', () => player.playNext());
+
+        pipWindow.addEventListener('pagehide', () => {
+            pipWindow = null;
+            pipElements = null;
+            setToggleState(false);
+        });
+
+        syncMiniPlayerMeta();
+        syncMiniPlayerPlayState();
+        syncMiniPlayerLikeState();
+        syncMiniPlayerProgress();
+        setToggleState(true);
+        return true;
+    };
+
+    toggleBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+
+        if (isMobileViewport()) {
+            if (!player.currentTrack) {
+                showNotification('Play a song first to open fullscreen.');
+                return;
+            }
+
+            const overlay = document.getElementById('fullscreen-cover-overlay');
+            const isFullscreenOpen = overlay && getComputedStyle(overlay).display !== 'none';
+
+            if (isFullscreenOpen) {
+                closeFullscreenOverlay().catch(console.error);
+                return;
+            }
+
+            const nextTrack = player.getNextTrack();
+            UIRenderer.instance?.showFullscreenCover(player.currentTrack, nextTrack, lyricsManager, player.activeElement);
+            return;
+        }
+
+        if (canUseDocumentPiP) {
+            openPipWindow().catch((error) => {
+                console.warn('Document Picture-in-Picture unavailable, falling back to in-page mini player:', error);
+                setOpen(!miniPlayer.classList.contains('active'));
+            });
+            return;
+        }
+
+        setOpen(!miniPlayer.classList.contains('active'));
+    });
+
+    likeBtn.addEventListener('click', () => nowPlayingLikeBtn?.click());
+    prevBtn.addEventListener('click', () => player.playPrev());
+    playBtn.addEventListener('click', () => player.handlePlayPause());
+    nextBtn.addEventListener('click', () => player.playNext());
+
+    const nowPlayingTitleEl = document.querySelector('.now-playing-bar .title');
+    const nowPlayingArtistEl = document.querySelector('.now-playing-bar .artist');
+    const nowPlayingCoverEl = document.querySelector('.now-playing-bar .cover');
+
+    const miniPlayerMutationObserver = new MutationObserver(() => {
+        syncMiniPlayerMeta();
+        syncMiniPlayerPlayState();
+        syncMiniPlayerLikeState();
+        syncMiniPlayerProgress();
+    });
+
+    if (nowPlayingTitleEl) {
+        miniPlayerMutationObserver.observe(nowPlayingTitleEl, { childList: true, subtree: true, characterData: true });
+    }
+    if (nowPlayingArtistEl) {
+        miniPlayerMutationObserver.observe(nowPlayingArtistEl, { childList: true, subtree: true, characterData: true });
+    }
+    if (nowPlayingCoverEl) {
+        miniPlayerMutationObserver.observe(nowPlayingCoverEl, { attributes: true, attributeFilter: ['src'] });
+    }
+    if (nowPlayingPlayBtn) {
+        miniPlayerMutationObserver.observe(nowPlayingPlayBtn, { childList: true, subtree: true });
+    }
+    if (nowPlayingCurrentTimeEl) {
+        miniPlayerMutationObserver.observe(nowPlayingCurrentTimeEl, { childList: true, subtree: true, characterData: true });
+    }
+    if (nowPlayingTotalDurationEl) {
+        miniPlayerMutationObserver.observe(nowPlayingTotalDurationEl, { childList: true, subtree: true, characterData: true });
+    }
+    if (nowPlayingProgressFillEl) {
+        miniPlayerMutationObserver.observe(nowPlayingProgressFillEl, {
+            attributes: true,
+            attributeFilter: ['style'],
+        });
+    }
+    if (nowPlayingLikeBtn) {
+        miniPlayerMutationObserver.observe(nowPlayingLikeBtn, {
+            childList: true,
+            subtree: true,
+            attributes: true,
+            attributeFilter: ['class', 'style'],
+        });
+    }
+
+    [player.audio, player.video].forEach((mediaEl) => {
+        if (!mediaEl) return;
+        mediaEl.addEventListener('play', syncMiniPlayerPlayState);
+        mediaEl.addEventListener('pause', syncMiniPlayerPlayState);
+        mediaEl.addEventListener('loadedmetadata', syncMiniPlayerMeta);
+    });
+
+    syncMiniPlayerMeta();
+    syncMiniPlayerPlayState();
+    syncMiniPlayerLikeState();
+    syncMiniPlayerProgress();
+    setToggleState(false);
+
+    const miniPlayerViewportQuery = window.matchMedia('(max-width: 768px)');
+    const handleMiniPlayerViewportChange = () => {
+        const isOpen = miniPlayer.classList.contains('active') || !!(pipWindow && !pipWindow.closed);
+        setToggleState(isOpen);
+    };
+
+    if (typeof miniPlayerViewportQuery.addEventListener === 'function') {
+        miniPlayerViewportQuery.addEventListener('change', handleMiniPlayerViewportChange);
+    } else if (typeof miniPlayerViewportQuery.addListener === 'function') {
+        miniPlayerViewportQuery.addListener(handleMiniPlayerViewportChange);
+    }
+}
+
 async function closeFullscreenOverlay() {
     if (UIRenderer.instance?.dismissFullscreenCover) {
         await UIRenderer.instance.dismissFullscreenCover({ animate: false });
@@ -701,6 +1165,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     );
     initializeUIInteractions(Player.instance, MusicAPI.instance, UIRenderer.instance);
     initializeKeyboardShortcuts(Player.instance, audioPlayer);
+    initializeMiniPlayer(Player.instance, lyricsManager);
 
     // Restore UI state for the current track (like button, theme)
     if (Player.instance.currentTrack) {
@@ -1957,6 +2422,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                         delete modal._pendingTracks;
                         // Also clear CSV input if we came from there? No, keep it separate.
                         console.log(`Added ${tracks.length} tracks (including pending)`);
+                    }
+
+                    if (!authManager?.user) {
+                        showNotification('You must login to create playlist.');
+                        return;
                     }
 
                     await db.createPlaylist(name, tracks, cover, description).then(async (playlist) => {
