@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const DEFAULT_SUPABASE_URL = 'https://your-project.supabase.co';
+const DEFAULT_SUPABASE_URL = 'https://ayvwykvovlqiqiagtpfo.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'public-anon-key';
 
 export const getSupabaseUrl = () => {
