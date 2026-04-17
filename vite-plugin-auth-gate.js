@@ -20,9 +20,8 @@ function parseBody(req) {
 
 function buildInjectionScript(env) {
     const AUTH_ENABLED = (env.AUTH_ENABLED ?? 'false') !== 'false';
-    const APPWRITE_ENDPOINT = env.APPWRITE_ENDPOINT;
-    const APPWRITE_PROJECT_ID = env.APPWRITE_PROJECT_ID;
-    const POCKETBASE_URL = env.POCKETBASE_URL;
+    const SUPABASE_URL = env.NEXT_PUBLIC_SUPABASE_URL || env.SUPABASE_URL;
+    const SUPABASE_ANON_KEY = env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || env.SUPABASE_ANON_KEY;
     const AUTH_GOOGLE_ENABLED = env.AUTH_GOOGLE_ENABLED;
     const AUTH_EMAIL_ENABLED = env.AUTH_EMAIL_ENABLED;
 
@@ -38,9 +37,8 @@ function buildInjectionScript(env) {
     if (Object.keys(authProviderOverrides).length > 0) {
         flags.push(`window.__AUTH_PROVIDERS__=${JSON.stringify(authProviderOverrides)}`);
     }
-    if (APPWRITE_ENDPOINT) flags.push(`window.__APPWRITE_ENDPOINT__=${JSON.stringify(APPWRITE_ENDPOINT)}`);
-    if (APPWRITE_PROJECT_ID) flags.push(`window.__APPWRITE_PROJECT_ID__=${JSON.stringify(APPWRITE_PROJECT_ID)}`);
-    if (POCKETBASE_URL) flags.push(`window.__POCKETBASE_URL__=${JSON.stringify(POCKETBASE_URL)}`);
+    if (SUPABASE_URL) flags.push(`window.__SUPABASE_URL__=${JSON.stringify(SUPABASE_URL)}`);
+    if (SUPABASE_ANON_KEY) flags.push(`window.__SUPABASE_ANON_KEY__=${JSON.stringify(SUPABASE_ANON_KEY)}`);
 
     return flags.length > 0 ? `<script>${flags.join(';')};</script>` : null;
 }
@@ -105,7 +103,7 @@ export default function authGatePlugin() {
                     process.exit(1);
                 }
 
-                console.log(`Auth gate enabled (Project: ${env.APPWRITE_PROJECT_ID})`);
+                console.log('Auth gate enabled');
 
                 server.middlewares.use(
                     cookieSession({

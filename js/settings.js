@@ -47,7 +47,7 @@ import { parseRawData, TARGETS, SPEAKER_TARGETS } from './autoeq-data.js';
 import { fetchAutoEqIndex, fetchHeadphoneData, searchHeadphones, POPULAR_HEADPHONES } from './autoeq-importer.js';
 import { db } from './db.js';
 import { authManager } from './accounts/auth.js';
-import { syncManager } from './accounts/pocketbase.js';
+import { syncManager } from './accounts/supabase-sync.js';
 import { containerFormats, customFormats } from './ffmpegFormats.ts';
 import { BulkDownloadMethod, modernSettings } from './ModernSettings.js';
 import { isIos, isSafari } from './platform-detection.js';
@@ -6586,40 +6586,33 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
     const customDbBtn = document.getElementById('custom-db-btn');
     const customDbModal = document.getElementById('custom-db-modal');
-    const customPbUrlInput = document.getElementById('custom-pb-url');
-    const customAppwriteEndpointInput = document.getElementById('custom-appwrite-endpoint');
-    const customAppwriteProjectInput = document.getElementById('custom-appwrite-project');
+    const customSupabaseUrlInput = document.getElementById('custom-supabase-url');
+    const customSupabaseAnonKeyInput = document.getElementById('custom-supabase-anon-key');
     const customDbSaveBtn = document.getElementById('custom-db-save');
     const customDbResetBtn = document.getElementById('custom-db-reset');
     const customDbCancelBtn = document.getElementById('custom-db-cancel');
 
     if (customDbBtn && customDbModal) {
-        const appwriteFromEnv = !!(window.__APPWRITE_ENDPOINT__ || window.__APPWRITE_PROJECT_ID__);
-        const pbFromEnv = !!window.__POCKETBASE_URL__;
+        const supabaseFromEnv = !!(window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__);
 
-        // Hide entire setting if both are server-configured
-        if (appwriteFromEnv && pbFromEnv) {
+        // Hide entire setting if Supabase is server-configured
+        if (supabaseFromEnv) {
             const settingItem = customDbBtn.closest('.setting-item');
             if (settingItem) settingItem.style.display = 'none';
         }
 
         // Hide individual fields in the modal
-        if (pbFromEnv && customPbUrlInput) customPbUrlInput.closest('div[style]').style.display = 'none';
-        if (appwriteFromEnv) {
-            if (customAppwriteEndpointInput) customAppwriteEndpointInput.closest('div[style]').style.display = 'none';
-            if (customAppwriteProjectInput) customAppwriteProjectInput.closest('div[style]').style.display = 'none';
+        if (supabaseFromEnv) {
+            if (customSupabaseUrlInput) customSupabaseUrlInput.closest('div[style]').style.display = 'none';
+            if (customSupabaseAnonKeyInput) customSupabaseAnonKeyInput.closest('div[style]').style.display = 'none';
         }
 
         customDbBtn.addEventListener('click', () => {
-            const pbUrl = localStorage.getItem('monochrome-pocketbase-url') || '';
-            const appwriteEndpoint = localStorage.getItem('monochrome-appwrite-endpoint') || '';
-            const appwriteProject = localStorage.getItem('monochrome-appwrite-project') || '';
+            const supabaseUrl = localStorage.getItem('monochrome-supabase-url') || '';
+            const supabaseAnonKey = localStorage.getItem('monochrome-supabase-anon-key') || '';
 
-            if (!pbFromEnv && customPbUrlInput) customPbUrlInput.value = pbUrl;
-            if (!appwriteFromEnv) {
-                if (customAppwriteEndpointInput) customAppwriteEndpointInput.value = appwriteEndpoint;
-                if (customAppwriteProjectInput) customAppwriteProjectInput.value = appwriteProject;
-            }
+            if (!supabaseFromEnv && customSupabaseUrlInput) customSupabaseUrlInput.value = supabaseUrl;
+            if (!supabaseFromEnv && customSupabaseAnonKeyInput) customSupabaseAnonKeyInput.value = supabaseAnonKey;
 
             customDbModal.classList.add('active');
         });
@@ -6632,29 +6625,20 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         customDbModal.querySelector('.modal-overlay').addEventListener('click', closeCustomDbModal);
 
         customDbSaveBtn.addEventListener('click', () => {
-            if (!pbFromEnv && customPbUrlInput) {
-                const pbUrl = customPbUrlInput.value.trim();
-                if (pbUrl) {
-                    localStorage.setItem('monochrome-pocketbase-url', pbUrl);
-                } else {
-                    localStorage.removeItem('monochrome-pocketbase-url');
-                }
-            }
+            if (!supabaseFromEnv) {
+                const supabaseUrl = customSupabaseUrlInput?.value.trim();
+                const supabaseAnonKey = customSupabaseAnonKeyInput?.value.trim();
 
-            if (!appwriteFromEnv) {
-                const endpoint = customAppwriteEndpointInput?.value.trim();
-                const project = customAppwriteProjectInput?.value.trim();
-
-                if (endpoint) {
-                    localStorage.setItem('monochrome-appwrite-endpoint', endpoint);
+                if (supabaseUrl) {
+                    localStorage.setItem('monochrome-supabase-url', supabaseUrl);
                 } else {
-                    localStorage.removeItem('monochrome-appwrite-endpoint');
+                    localStorage.removeItem('monochrome-supabase-url');
                 }
 
-                if (project) {
-                    localStorage.setItem('monochrome-appwrite-project', project);
+                if (supabaseAnonKey) {
+                    localStorage.setItem('monochrome-supabase-anon-key', supabaseAnonKey);
                 } else {
-                    localStorage.removeItem('monochrome-appwrite-project');
+                    localStorage.removeItem('monochrome-supabase-anon-key');
                 }
             }
 
@@ -6664,9 +6648,8 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
         customDbResetBtn.addEventListener('click', () => {
             if (confirm('Reset custom database settings to default?')) {
-                localStorage.removeItem('monochrome-pocketbase-url');
-                localStorage.removeItem('monochrome-appwrite-endpoint');
-                localStorage.removeItem('monochrome-appwrite-project');
+                localStorage.removeItem('monochrome-supabase-url');
+                localStorage.removeItem('monochrome-supabase-anon-key');
                 alert('Settings reset. Reloading...');
                 window.location.reload();
             }

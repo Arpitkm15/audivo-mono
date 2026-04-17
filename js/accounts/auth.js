@@ -1,25 +1,25 @@
 // js/accounts/auth.js
-import { auth } from './config.js';
+import { auth, getSupabaseAnonKey, getSupabaseUrl, normalizeSupabaseUser, supabase } from './config.js';
 
 export class AuthManager {
     constructor() {
         this.user = null;
         this.authListeners = [];
+        this._subscription = null;
         this.init().catch(console.error);
     }
 
     async init() {
         const params = new URLSearchParams(window.location.search);
-        const userId = params.get('userId');
-        const secret = params.get('secret');
+        const code = params.get('code');
         const isOAuthRedirect = params.get('oauth') === '1';
 
-        if (userId && secret && userId !== 'null' && secret !== 'null') {
+        if (code) {
             try {
-                await auth.createSession(userId, secret);
-                window.history.replaceState({}, '', window.location.pathname);
+                await auth.exchangeCodeForSession(code);
             } catch (error) {
                 console.warn('OAuth session handoff failed:', error.message);
+            } finally {
                 window.history.replaceState({}, '', window.location.pathname);
             }
         } else if (isOAuthRedirect) {
@@ -27,13 +27,28 @@ export class AuthManager {
             window.history.replaceState({}, '', window.location.pathname);
         }
 
-        this.user = null;
-        this.updateUI(null);
+        await this.refreshUser();
+
+        this._subscription = supabase.auth.onAuthStateChange((_event, session) => {
+            this.user = normalizeSupabaseUser(session?.user || null);
+            this.updateUI(this.user);
+            this.authListeners.forEach((listener) => listener(this.user));
+        });
+    }
+
+    async refreshUser() {
+        try {
+            this.user = await auth.get();
+        } catch {
+            this.user = null;
+        }
+
+        this.updateUI(this.user);
+        this.authListeners.forEach((listener) => listener(this.user));
     }
 
     onAuthStateChanged(callback) {
         this.authListeners.push(callback);
-        // If we already have a user state, trigger immediately
         if (this.user !== null) {
             callback(this.user);
         }
@@ -41,11 +56,7 @@ export class AuthManager {
 
     async signInWithGoogle() {
         try {
-            auth.createOAuth2Session(
-                'google',
-                window.location.origin + '/index.html?oauth=1',
-                window.location.origin + '/login.html'
-            );
+            await auth.createOAuth2Session('google', window.location.origin + '/index.html?oauth=1');
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -54,11 +65,7 @@ export class AuthManager {
 
     async signInWithGitHub() {
         try {
-            auth.createOAuth2Session(
-                'github',
-                window.location.origin + '/index.html?oauth=1',
-                window.location.origin + '/login.html'
-            );
+            await auth.createOAuth2Session('github', window.location.origin + '/index.html?oauth=1');
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -67,11 +74,7 @@ export class AuthManager {
 
     async signInWithSpotify() {
         try {
-            auth.createOAuth2Session(
-                'spotify',
-                window.location.origin + '/index.html?oauth=1',
-                window.location.origin + '/login.html'
-            );
+            await auth.createOAuth2Session('spotify', window.location.origin + '/index.html?oauth=1');
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -80,11 +83,7 @@ export class AuthManager {
 
     async signInWithDiscord() {
         try {
-            auth.createOAuth2Session(
-                'discord',
-                window.location.origin + '/index.html?oauth=1',
-                window.location.origin + '/login.html'
-            );
+            await auth.createOAuth2Session('discord', window.location.origin + '/index.html?oauth=1');
         } catch (error) {
             console.error('Login failed:', error);
             alert(`Login failed: ${error.message}`);
@@ -93,8 +92,7 @@ export class AuthManager {
 
     async signInWithEmail(email, password) {
         try {
-            await auth.createEmailPasswordSession(email, password);
-            this.user = await auth.get();
+            this.user = await auth.createEmailPasswordSession(email, password);
             this.updateUI(this.user);
             this.authListeners.forEach((listener) => listener(this.user));
             return this.user;
@@ -107,12 +105,21 @@ export class AuthManager {
 
     async signUpWithEmail(email, password) {
         try {
-            await auth.create('unique()', email, password);
-            await auth.createEmailPasswordSession(email, password);
-            this.user = await auth.get();
-            this.updateUI(this.user);
-            this.authListeners.forEach((listener) => listener(this.user));
-            return this.user;
+            await auth.create(email, email, password);
+            try {
+                // If email confirmation is disabled, this logs in immediately.
+                this.user = await auth.createEmailPasswordSession(email, password);
+                this.updateUI(this.user);
+                this.authListeners.forEach((listener) => listener(this.user));
+                return this.user;
+            } catch (signInError) {
+                const msg = String(signInError?.message || '').toLowerCase();
+                if (msg.includes('email not confirmed') || msg.includes('email_not_confirmed')) {
+                    alert('Account created. Please verify your email, then sign in.');
+                    return null;
+                }
+                throw signInError;
+            }
         } catch (error) {
             console.error('Sign Up failed:', error);
             alert(`Sign Up failed: ${error.message}`);
@@ -122,7 +129,10 @@ export class AuthManager {
 
     async sendPasswordReset(email) {
         try {
-            await auth.createRecovery(email, window.location.origin + '/reset-password');
+            const redirectUrl = new URL(window.location.origin + '/reset-password');
+            redirectUrl.searchParams.set('supabaseUrl', getSupabaseUrl());
+            redirectUrl.searchParams.set('supabaseAnonKey', getSupabaseAnonKey());
+            await auth.createRecovery(email, redirectUrl.toString());
             alert(`Password reset email sent to ${email}`);
         } catch (error) {
             console.error('Password reset failed:', error);
@@ -184,8 +194,8 @@ export class AuthManager {
 
             const customDbBtn = document.getElementById('custom-db-btn');
             if (customDbBtn) {
-                const pbFromEnv = !!window.__POCKETBASE_URL__;
-                if (pbFromEnv) {
+                const supabaseFromEnv = !!(window.__SUPABASE_URL__ && window.__SUPABASE_ANON_KEY__);
+                if (supabaseFromEnv) {
                     const settingItem = customDbBtn.closest('.setting-item');
                     if (settingItem) settingItem.style.display = 'none';
                 }

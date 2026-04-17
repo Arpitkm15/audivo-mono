@@ -10,7 +10,7 @@ import {
 import { sidePanelManager } from './side-panel.js';
 import { downloadQualitySettings, contentBlockingSettings } from './storage.js';
 import { db } from './db.js';
-import { syncManager } from './accounts/pocketbase.js';
+import { syncManager } from './accounts/supabase-sync.js';
 import { showNotification, downloadTracks } from './downloads.js';
 import {
     SVG_CLOSE,

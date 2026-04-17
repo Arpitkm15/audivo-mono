@@ -1,7 +1,35 @@
 // functions/userplaylist/[id].js
 
-const POCKETBASE_URL = 'https://data.samidy.xyz';
 const PUBLIC_COLLECTION = 'public_playlists';
+
+function getSupabaseConfig(env) {
+    const supabaseUrl = env.SUPABASE_URL;
+    const supabaseAnonKey = env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY are required');
+    }
+
+    return { supabaseUrl, supabaseAnonKey };
+}
+
+async function fetchPublicPlaylistByUuid(supabaseUrl, supabaseAnonKey, playlistId) {
+    const url = new URL(`${supabaseUrl}/rest/v1/${PUBLIC_COLLECTION}`);
+    url.searchParams.set('select', '*');
+    url.searchParams.set('uuid', `eq.${playlistId}`);
+    url.searchParams.set('limit', '1');
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+    });
+
+    if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
+    const data = await response.json();
+    return Array.isArray(data) && data.length > 0 ? data[0] : null;
+}
 
 function safeParseTracks(tracksData) {
     if (!tracksData) return [];
@@ -62,14 +90,8 @@ export async function onRequest(context) {
 
     if (isBot && playlistId) {
         try {
-            const filter = `uuid="${playlistId}"`;
-            const apiUrl = `${POCKETBASE_URL}/api/collections/${PUBLIC_COLLECTION}/records?filter=${encodeURIComponent(filter)}&perPage=1`;
-
-            const response = await fetch(apiUrl);
-            if (!response.ok) throw new Error(`PocketBase error: ${response.status}`);
-
-            const result = await response.json();
-            const record = result.items && result.items.length > 0 ? result.items[0] : null;
+            const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig(env);
+            const record = await fetchPublicPlaylistByUuid(supabaseUrl, supabaseAnonKey, playlistId);
 
             if (record) {
                 let extraData = {};
@@ -99,7 +121,7 @@ export async function onRequest(context) {
                 if (rawCover && (rawCover.startsWith('http') || rawCover.startsWith('data:'))) {
                     imageUrl = rawCover;
                 } else if (rawCover) {
-                    imageUrl = `${POCKETBASE_URL}/api/files/${PUBLIC_COLLECTION}/${record.id}/${rawCover}`;
+                    imageUrl = rawCover;
                 }
 
                 if (!imageUrl && tracks.length > 0) {

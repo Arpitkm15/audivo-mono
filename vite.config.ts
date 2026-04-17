@@ -12,7 +12,7 @@ import { playwright } from '@vitest/browser-playwright';
 
 function getGitCommitHash() {
     try {
-        return execSync('git rev-parse --short HEAD').toString().trim();
+        return execSync('git rev-parse --short HEAD', { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
     } catch {
         return 'unknown';
     }
@@ -46,12 +46,11 @@ export default defineConfig((_options) => {
                 '!': '/node_modules',
 
                 events: '/node_modules/events/events.js',
-                pocketbase: '/node_modules/pocketbase/dist/pocketbase.es.js',
                 stream: path.resolve(__dirname, 'stream-stub.js'), // Stub for stream module
             },
         },
         optimizeDeps: {
-            exclude: ['pocketbase', '@ffmpeg/ffmpeg', '@ffmpeg/util'],
+            exclude: ['@ffmpeg/ffmpeg', '@ffmpeg/util', '@supabase/supabase-js'],
         },
         server: {
             fs: {

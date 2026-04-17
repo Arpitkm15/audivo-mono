@@ -32,7 +32,7 @@ import {
 } from './storage.js';
 import { db } from './db.js';
 import { getVibrantColorFromImage } from './vibrant-color.js';
-import { syncManager } from './accounts/pocketbase.js';
+import { syncManager } from './accounts/supabase-sync.js';
 import { authManager } from './accounts/auth.js';
 import { partyManager } from './listening-party.js';
 import { Visualizer } from './visualizer.js';
@@ -4799,12 +4799,12 @@ export class UIRenderer {
                 ownedPlaylist = await db.getPlaylist(playlistId);
                 playlistData = ownedPlaylist;
 
-                // If not in local DB, check if it's a public Pocketbase playlist
+                // If not in local DB, check if it's a public cloud playlist
                 if (!playlistData) {
                     try {
                         playlistData = await syncManager.getPublicPlaylist(playlistId);
                     } catch (e) {
-                        console.warn('Failed to check public pocketbase playlists:', e);
+                        console.warn('Failed to check public cloud playlists:', e);
                     }
                 }
             }

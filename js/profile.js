@@ -1,4 +1,4 @@
-import { syncManager } from './accounts/pocketbase.js';
+import { syncManager } from './accounts/supabase-sync.js';
 import { authManager } from './accounts/auth.js';
 import { navigate } from './router.js';
 import { MusicAPI } from './music-api.js';
@@ -141,11 +141,19 @@ export async function loadProfile(username) {
     document.getElementById('profile-avatar').src = '/icon.jpg';
     document.getElementById('profile-display-name').textContent = 'Loading...';
     document.getElementById('profile-username').textContent = '@' + username;
+    const badgeUsername = document.getElementById('profile-badge-username');
+    if (badgeUsername) badgeUsername.textContent = '@' + username;
     document.getElementById('profile-status').style.display = 'none';
     document.getElementById('profile-about').textContent = '';
     document.getElementById('profile-website').style.display = 'none';
     document.getElementById('profile-lastfm').style.display = 'none';
     document.getElementById('profile-playlists-container').innerHTML = '';
+    const profileStatPlaylists = document.getElementById('profile-stat-playlists');
+    const profileStatFavorites = document.getElementById('profile-stat-favorites');
+    const profileStatScrobbles = document.getElementById('profile-stat-scrobbles');
+    if (profileStatPlaylists) profileStatPlaylists.textContent = '0';
+    if (profileStatFavorites) profileStatFavorites.textContent = '0';
+    if (profileStatScrobbles) profileStatScrobbles.textContent = '0';
 
     const favAlbumsSection = document.getElementById('profile-favorite-albums-section');
     const favAlbumsContainer = document.getElementById('profile-favorite-albums-container');
@@ -181,8 +189,16 @@ export async function loadProfile(username) {
     }
 
     document.getElementById('profile-display-name').textContent = profile.display_name || username;
+    if (badgeUsername) badgeUsername.textContent = '@' + (profile.username || username);
     if (profile.banner) document.getElementById('profile-banner').style.backgroundImage = `url('${profile.banner}')`;
     if (profile.avatar_url) document.getElementById('profile-avatar').src = profile.avatar_url;
+
+    const publicPlaylists = Object.values(profile.user_playlists || {}).filter((playlist) => playlist?.isPublic !== false);
+    if (profileStatPlaylists) profileStatPlaylists.textContent = String(publicPlaylists.length);
+    if (profileStatFavorites) profileStatFavorites.textContent = String((profile.favorite_albums || []).length);
+    if (profileStatScrobbles) {
+        profileStatScrobbles.textContent = profile.lastfm_username && profile.privacy?.lastfm !== 'private' ? '100+' : '0';
+    }
 
     if (profile.status) {
         const statusEl = document.getElementById('profile-status');
@@ -221,6 +237,8 @@ export async function loadProfile(username) {
 
     if (profile.about) {
         document.getElementById('profile-about').textContent = profile.about;
+    } else {
+        document.getElementById('profile-about').textContent = 'No bio yet.';
     }
 
     if (profile.website) {

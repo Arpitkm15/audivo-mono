@@ -1,4 +1,4 @@
-import { syncManager } from './accounts/pocketbase.js';
+import { syncManager } from './accounts/supabase-sync.js';
 import { authManager } from './accounts/auth.js';
 import { navigate } from './router.js';
 import { SVG_BIN, SVG_SQUARE_PEN } from './icons.js';

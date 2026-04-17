@@ -1177,7 +1177,7 @@
             <div class="modal-overlay"></div>
             <div class="modal-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem">
-                    <h3 style="margin: 0">Custom Database/Auth</h3>
+                    <h3 style="margin: 0">Custom Supabase</h3>
                     <button
                         id="custom-db-reset"
                         class="btn-secondary danger"
@@ -1187,35 +1187,19 @@
                     </button>
                 </div>
                 <p style="font-size: 0.9rem; color: var(--muted-foreground); margin-bottom: 1rem">
-                    Configure custom PocketBase and Appwrite instances. Leave empty to use defaults.
-                    <br />
-                    A Guide To Set This Up Can Be Found
-                    <a
-                        href="https://github.com/monochrome-music/monochrome/blob/main/DOCKER.md"
-                        style="text-decoration: underline"
-                        >Here</a
-                    >.
+                    Configure custom Supabase credentials. Leave empty to use the built-in defaults.
                 </p>
                 <div style="margin-bottom: 1rem">
-                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem">PocketBase URL</label>
-                    <input type="url" id="custom-pb-url" class="template-input" placeholder="https://data.samidy.xyz" />
+                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem">Supabase URL</label>
+                    <input type="url" id="custom-supabase-url" class="template-input" placeholder="https://your-project.supabase.co" />
                 </div>
                 <div style="margin-bottom: 1rem">
-                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem">Appwrite Endpoint</label>
-                    <input
-                        type="url"
-                        id="custom-appwrite-endpoint"
-                        class="template-input"
-                        placeholder="https://auth.samidy.com/v1"
-                    />
-                </div>
-                <div style="margin-bottom: 1rem">
-                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem">Appwrite Project ID</label>
+                    <label style="display: block; margin-bottom: 0.5rem; font-size: 0.9rem">Supabase Anon Key</label>
                     <input
                         type="text"
-                        id="custom-appwrite-project"
+                        id="custom-supabase-anon-key"
                         class="template-input"
-                        placeholder="auth-for-monochrome"
+                        placeholder="eyJ..."
                     />
                 </div>
                 <div class="modal-actions">
@@ -1727,6 +1711,15 @@
                     >
                         AUDIVO
                     </a>
+                    <button
+                        type="button"
+                        id="mobile-search-btn"
+                        class="btn-icon mobile-only topnav-search-btn"
+                        title="Search"
+                        aria-label="Open search"
+                    >
+                        <use svg="!lucide/search.svg" size="20" />
+                    </button>
                     <form class="search-bar" id="search-form">
                         <use svg="!lucide/search.svg" class="search-icon" size="24" />
                         <input
@@ -1751,12 +1744,22 @@
                     <button
                         type="button"
                         id="topnav-download-btn"
-                        class="btn-icon topnav-download-btn desktop-only"
+                        class="btn-icon topnav-download-btn"
                         title="Downloads"
                         aria-label="Open downloads"
                         onclick="window.history.pushState({}, '', '/download'); window.dispatchEvent(new PopStateEvent('popstate'));"
                     >
                         <use svg="!lucide/download.svg" size="20" />
+                    </button>
+                    <button
+                        type="button"
+                        id="topnav-profile-btn"
+                        class="btn-icon topnav-profile-btn"
+                        title="User Profile"
+                        aria-label="Open account"
+                        onclick="window.history.pushState({}, '', '/account'); window.dispatchEvent(new PopStateEvent('popstate'));"
+                    >
+                        <use svg="!lucide/user.svg" size="20" />
                     </button>
                     <div class="header-account-control">
                         <button
@@ -2795,68 +2798,145 @@
                     </section>
                 </div>
 
-                <div id="page-profile" class="page">
-                    <div class="profile-header-container">
+                <div id="page-profile" class="page profile-page-shell">
+                    <div class="profile-hero-shell">
                         <div class="profile-banner" id="profile-banner"></div>
-                        <div class="profile-info-section">
-                            <img id="profile-avatar" src="/icon.jpg" class="profile-avatar" alt="Avatar" />
-                            <div class="profile-details">
-                                <h1 id="profile-display-name">User</h1>
-                                <div id="profile-username" class="profile-username">@username</div>
-                                <div id="profile-status" class="profile-status" style="display: none"></div>
-                                <div id="profile-about" class="profile-about"></div>
-                                <div class="profile-links">
-                                    <a
-                                        id="profile-website"
-                                        href="#"
-                                        target="_blank"
-                                        class="profile-link"
-                                        style="display: none"
-                                        >Website</a
-                                    >
-                                    <a
-                                        id="profile-lastfm"
-                                        href="#"
-                                        target="_blank"
-                                        class="profile-link"
-                                        style="display: none"
-                                        >Last.fm</a
-                                    >
-                                </div>
-                            </div>
-                            <div class="profile-actions">
-                                <button id="profile-edit-btn" class="btn-secondary" style="display: none">
-                                    Edit Profile
-                                </button>
+                        <div class="profile-hero-overlay"></div>
+                        <div class="profile-header-container">
+                            <div class="profile-hero-grid">
+                                <aside class="profile-identity-card">
+                                    <div class="profile-avatar-frame">
+                                        <img id="profile-avatar" src="/icon.jpg" class="profile-avatar" alt="Avatar" />
+                                    </div>
+                                    <div class="profile-identity-copy">
+                                        <div class="profile-eyebrow">Public profile</div>
+                                        <h1 id="profile-display-name">User</h1>
+                                        <div id="profile-username" class="profile-username">@username</div>
+                                        <div id="profile-status" class="profile-status" style="display: none"></div>
+                                        <div class="profile-actions">
+                                            <button id="profile-edit-btn" class="btn-secondary" style="display: none">
+                                                Edit Profile
+                                            </button>
+                                        </div>
+                                    </div>
+                                </aside>
+
+                                <section class="profile-summary-card">
+                                    <div class="profile-summary-header">
+                                        <div>
+                                            <div class="profile-section-kicker">About</div>
+                                            <h2 class="profile-summary-title">Profile overview</h2>
+                                        </div>
+                                        <div class="profile-badge-row">
+                                            <span class="profile-badge">Audivo member</span>
+                                            <span class="profile-badge profile-badge-muted" id="profile-badge-username">@username</span>
+                                        </div>
+                                    </div>
+
+                                    <div id="profile-about" class="profile-about"></div>
+
+                                    <div class="profile-links">
+                                        <a
+                                            id="profile-website"
+                                            href="#"
+                                            target="_blank"
+                                            class="profile-link"
+                                            style="display: none"
+                                            >Website</a
+                                        >
+                                        <a
+                                            id="profile-lastfm"
+                                            href="#"
+                                            target="_blank"
+                                            class="profile-link"
+                                            style="display: none"
+                                            >Last.fm</a
+                                        >
+                                    </div>
+
+                                    <div class="profile-stats-grid">
+                                        <div class="profile-stat-card">
+                                            <span class="profile-stat-label">Playlists</span>
+                                            <strong id="profile-stat-playlists">0</strong>
+                                        </div>
+                                        <div class="profile-stat-card">
+                                            <span class="profile-stat-label">Favorite albums</span>
+                                            <strong id="profile-stat-favorites">0</strong>
+                                        </div>
+                                        <div class="profile-stat-card">
+                                            <span class="profile-stat-label">Recent scrobbles</span>
+                                            <strong id="profile-stat-scrobbles">0</strong>
+                                        </div>
+                                    </div>
+                                </section>
                             </div>
                         </div>
                     </div>
+
                     <div class="profile-content">
-                        <h2 class="section-title">Public Playlists</h2>
-                        <div class="card-grid" id="profile-playlists-container"></div>
-                        <div id="profile-favorite-albums-section" style="display: none; margin-top: 3rem">
-                            <h2 class="section-title">Favorite Albums of All Time</h2>
+                        <div class="profile-content-section">
+                            <div class="profile-section-header">
+                                <div>
+                                    <div class="profile-section-kicker">Library</div>
+                                    <h2 class="section-title">Public Playlists</h2>
+                                </div>
+                                <p class="profile-section-description">Public collections shared from this profile.</p>
+                            </div>
+                            <div class="card-grid" id="profile-playlists-container"></div>
+                        </div>
+
+                        <div id="profile-favorite-albums-section" class="profile-content-section" style="display: none">
+                            <div class="profile-section-header">
+                                <div>
+                                    <div class="profile-section-kicker">Taste</div>
+                                    <h2 class="section-title">Favorite Albums of All Time</h2>
+                                </div>
+                                <p class="profile-section-description">Albums that define this profile.</p>
+                            </div>
                             <div id="profile-favorite-albums-container"></div>
                         </div>
-                        <div id="profile-recent-scrobbles-section" style="display: none; margin-top: 3rem">
-                            <div style="display: flex; align-items: baseline; gap: 1rem; margin-bottom: 1rem">
-                                <h2 class="section-title" style="margin-bottom: 0">Recent Scrobbling</h2>
-                                <span style="font-size: 0.8rem; color: var(--muted-foreground)"
-                                    >Powered by Last.fm</span
-                                >
+
+                        <div id="profile-recent-scrobbles-section" class="profile-content-section" style="display: none">
+                            <div class="profile-section-header">
+                                <div>
+                                    <div class="profile-section-kicker">Listening</div>
+                                    <h2 class="section-title" style="margin-bottom: 0">Recent Scrobbling</h2>
+                                </div>
+                                <span class="profile-section-description">Powered by Last.fm</span>
                             </div>
                             <div class="track-list" id="profile-recent-scrobbles-container"></div>
                         </div>
-                        <div id="profile-top-artists-section" style="display: none; margin-top: 3rem">
-                            <h2 class="section-title">Top Artists</h2>
+
+                        <div id="profile-top-artists-section" class="profile-content-section" style="display: none">
+                            <div class="profile-section-header">
+                                <div>
+                                    <div class="profile-section-kicker">Listening</div>
+                                    <h2 class="section-title">Top Artists</h2>
+                                </div>
+                                <p class="profile-section-description">Most played artists from Last.fm.</p>
+                            </div>
                             <div class="card-grid" id="profile-top-artists-container"></div>
                         </div>
-                        <div id="profile-top-albums-section" style="display: none; margin-top: 3rem">
-                            <h2 class="section-title">Top Albums</h2>
+
+                        <div id="profile-top-albums-section" class="profile-content-section" style="display: none">
+                            <div class="profile-section-header">
+                                <div>
+                                    <div class="profile-section-kicker">Listening</div>
+                                    <h2 class="section-title">Top Albums</h2>
+                                </div>
+                                <p class="profile-section-description">Most played albums from Last.fm.</p>
+                            </div>
                             <div class="card-grid" id="profile-top-albums-container"></div>
                         </div>
-                        <div id="profile-top-tracks-section" style="display: none; margin-top: 3rem">
-                            <h2 class="section-title">Top Tracks</h2>
+
+                        <div id="profile-top-tracks-section" class="profile-content-section" style="display: none">
+                            <div class="profile-section-header">
+                                <div>
+                                    <div class="profile-section-kicker">Listening</div>
+                                    <h2 class="section-title">Top Tracks</h2>
+                                </div>
+                                <p class="profile-section-description">Most played tracks from Last.fm.</p>
+                            </div>
                             <div class="track-list" id="profile-top-tracks-container"></div>
                         </div>
                     </div>
@@ -5725,59 +5805,44 @@
                     </section>
                 </div>
                 <div id="page-account" class="page">
-                    <h2 class="section-title" style="text-align: center">Sign Up / Sign In</h2>
-                    <div class="account-content">
-                        <p style="text-align: center" class="account-description">
-                            Make an account to allow syncing your library between devices.
-                        </p>
-                        <div
-                            class="account-buttons"
-                            id="auth-buttons-container"
-                            style="
-                                display: flex;
-                                gap: 20px;
-                                align-items: center;
-                                justify-content: center;
-                                margin-top: 50px;
-                                flex-wrap: wrap;
-                            "
-                        >
-                            <button id="auth-connect-btn" class="btn-secondary">Connect with Google</button>
-                            <button id="auth-github-btn" class="btn-secondary">Connect with GitHub</button>
-                            <button id="auth-discord-btn" class="btn-secondary">Connect with Discord</button>
-                            <button id="toggle-email-auth-btn" class="btn-secondary">Connect with Email</button>
-                            <button id="view-my-profile-btn" class="btn-secondary" style="display: none">
-                                View My Profile
-                            </button>
-                        </div>
+                    <section class="account-auth-shell">
+                        <div class="account-auth-card">
+                            <div class="account-auth-badge">audivo account</div>
+                            <h2 class="section-title account-auth-title">Sign In / Sign Up</h2>
+                            <p class="account-auth-subtitle">
+                                Continue with Google to sync your likes, playlists, and history across devices.
+                            </p>
 
-                        <p id="auth-status" style="text-align: center; padding-top: 15px; color: #8b8b93">
-                            Sync your library across devices
-                        </p>
-                        <p style="padding-top: 50px; text-align: center; color: #8b8b93">
-                            We only store music data and a randomized ID to find out which Google/Email account is
-                            which.
-                            <br />
-                            All data is anonymous. We do not store anything like emails, usernames, or anything
-                            sensitive. <br />
-                        </p>
-                        <p style="padding-top: 50px; text-align: center; color: #8b8b93">
-                            However, if you want complete control over your data, we allow you to use your own Database
-                            Configuration.
-                        </p>
-                        <div
-                            style="
-                                display: flex;
-                                gap: 50px;
-                                align-items: center;
-                                justify-content: center;
-                                padding-top: 25px;
-                            "
-                        >
-                            <a id="advanced-config-link" class="btn-secondary" href="/settings"
+                            <div class="account-auth-actions" id="auth-buttons-container">
+                                <button id="auth-connect-btn" class="btn-primary account-google-btn">
+                                    <use svg="!lucide/log-in.svg" size="18" />
+                                    <span>Login with Google</span>
+                                </button>
+                                <button id="view-my-profile-btn" class="btn-secondary" style="display: none">
+                                    View My Profile
+                                </button>
+                            </div>
+
+                            <p id="auth-status" class="account-auth-status">Sync your library across devices</p>
+
+                            <div class="account-auth-feature-grid">
+                                <div class="account-auth-feature-item">Cloud-synced likes</div>
+                                <div class="account-auth-feature-item">Playlists on every device</div>
+                                <div class="account-auth-feature-item">History backup</div>
+                            </div>
+
+                            <div class="account-auth-note">
+                                <use svg="!lucide/shield-check.svg" size="16" />
+                                <span>We only store music sync data and a randomized account ID.</span>
+                            </div>
+
+                            <a id="advanced-config-link" class="btn-secondary account-auth-advanced" href="/settings"
                                 >Advanced: Custom Configuration</a
                             >
                         </div>
+                    </section>
+
+                    <div class="account-content">
                     </div>
                 </div>
                 <div id="page-donate" class="page">

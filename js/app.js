@@ -28,7 +28,7 @@ import { debounce, getShareUrl } from './utils.js';
 import { sidePanelManager } from './side-panel.js';
 import { db } from './db.js';
 import { showNotification } from './downloads.js';
-import { syncManager } from './accounts/pocketbase.js';
+import { syncManager } from './accounts/supabase-sync.js';
 import { authManager } from './accounts/auth.js';
 import { registerSW } from 'virtual:pwa-register';
 import { openEditProfile } from './profile.js';
@@ -1992,7 +1992,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const publicToggle = document.getElementById('playlist-public-toggle');
                     const shareBtn = document.getElementById('playlist-share-btn');
 
-                    // Check if actually public in Pocketbase to be sure (async) or trust local flag
+                    // Check if actually public in the cloud store to be sure (async) or trust local flag
                     // We trust local flag for UI speed, but could verify.
                     if (publicToggle) publicToggle.checked = !!playlist.isPublic;
 
@@ -2161,7 +2161,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 if (userPlaylist) {
                     tracks = userPlaylist.tracks;
                 } else {
-                    // Try API, if fail, try Public Pocketbase
+                    // Try API, if fail, try public cloud playlist lookup
                     try {
                         const { tracks: apiTracks } = await MusicAPI.instance.getPlaylist(playlistId);
                         tracks = apiTracks;
@@ -2496,6 +2496,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     const searchForm = document.getElementById('search-form');
     const searchInput = document.getElementById('search-input');
+    const mobileSearchBtn = document.getElementById('mobile-search-btn');
+    const mainHeader = document.querySelector('.main-header');
+
+    const closeMobileSearch = () => {
+        mainHeader?.classList.remove('mobile-search-open');
+        mobileSearchBtn?.setAttribute('aria-expanded', 'false');
+    };
+
+    const openMobileSearch = () => {
+        if (!mainHeader || !searchInput) return;
+        mainHeader.classList.add('mobile-search-open');
+        mobileSearchBtn?.setAttribute('aria-expanded', 'true');
+        requestAnimationFrame(() => {
+            searchInput.focus();
+            searchInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+    };
+
+    mobileSearchBtn?.addEventListener('click', () => {
+        if (mainHeader?.classList.contains('mobile-search-open')) {
+            closeMobileSearch();
+            searchInput?.blur();
+            return;
+        }
+        openMobileSearch();
+    });
+
+    document.addEventListener('click', (event) => {
+        if (!mainHeader?.classList.contains('mobile-search-open')) return;
+        if (event.target.closest('#search-form') || event.target.closest('#mobile-search-btn')) return;
+        closeMobileSearch();
+    });
+
+    searchInput?.addEventListener('blur', () => {
+        if (window.innerWidth <= 768 && !searchInput.value.trim()) {
+            closeMobileSearch();
+        }
+    });
 
     UIRenderer.instance.setupSearchClearButton(searchInput);
 
@@ -2579,6 +2617,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             performSearch(query);
             const historyEl = document.getElementById('search-history');
             if (historyEl) historyEl.style.display = 'none';
+        }
+
+        if (window.innerWidth <= 768) {
+            closeMobileSearch();
         }
     });
 
@@ -2774,7 +2816,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    // Listener for Pocketbase Sync updates
+    // Listener for cloud sync updates
     window.addEventListener('library-changed', () => {
         const path = window.location.pathname;
         if (path === '/library') {
@@ -2833,6 +2875,18 @@ document.addEventListener('DOMContentLoaded', async () => {
     const headerAccountImg = document.getElementById('header-account-img');
     const headerAccountIcon = document.getElementById('header-account-icon');
 
+    if (headerAccountImg && headerAccountIcon) {
+        headerAccountImg.onerror = () => {
+            headerAccountImg.style.display = 'none';
+            headerAccountIcon.style.display = 'flex';
+        };
+
+        if (!headerAccountImg.getAttribute('src')) {
+            headerAccountImg.style.display = 'none';
+            headerAccountIcon.style.display = 'flex';
+        }
+    }
+
     // Temporarily disable accounts - show popup
     const isAccountsDisabled = false;
 
@@ -2850,6 +2904,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         } else {
             headerAccountBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
+                if (!authManager?.user) {
+                    headerAccountDropdown.classList.remove('active');
+                    navigate('/account');
+                    return;
+                }
+
                 headerAccountDropdown.classList.toggle('active');
                 await updateAccountDropdown();
             });
@@ -2934,16 +2994,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
 
-        authManager.onAuthStateChanged(async (user) => {
-            if (user) {
-                const data = await syncManager.getUserData();
-                if (data && data.profile && data.profile.avatar_url) {
-                    headerAccountImg.src = data.profile.avatar_url + '&s=100';
-                    headerAccountImg.style.display = 'block';
-                    headerAccountIcon.style.display = 'none';
-                    return;
-                }
-            }
+        authManager.onAuthStateChanged(async (_user) => {
+            // Always keep navbar user icon visible.
             headerAccountImg.style.display = 'none';
             headerAccountIcon.style.display = 'flex';
         });

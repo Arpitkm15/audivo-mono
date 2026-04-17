@@ -1,5 +1,36 @@
 // functions/user/@[username].js
 
+const PROFILES_TABLE = 'profiles';
+
+function getSupabaseConfig(env) {
+    const supabaseUrl = env.SUPABASE_URL;
+    const supabaseAnonKey = env.SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+        throw new Error('SUPABASE_URL and SUPABASE_ANON_KEY are required');
+    }
+
+    return { supabaseUrl, supabaseAnonKey };
+}
+
+async function fetchProfileByUsername(supabaseUrl, supabaseAnonKey, username) {
+    const url = new URL(`${supabaseUrl}/rest/v1/${PROFILES_TABLE}`);
+    url.searchParams.set('select', 'username,display_name,avatar_url,banner,about,status');
+    url.searchParams.set('username', `eq.${username}`);
+    url.searchParams.set('limit', '1');
+
+    const response = await fetch(url.toString(), {
+        headers: {
+            apikey: supabaseAnonKey,
+            Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+    });
+
+    if (!response.ok) throw new Error(`Supabase error: ${response.status}`);
+    const data = await response.json();
+    return Array.isArray(data) && data.length > 0 ? data[0] : null;
+}
+
 export async function onRequest(context) {
     const { request, params, env } = context;
     const userAgent = request.headers.get('User-Agent') || '';
@@ -11,15 +42,8 @@ export async function onRequest(context) {
 
     if (isBot && username) {
         try {
-            const POCKETBASE_URL = 'https://data.samidy.xyz';
-            const filter = `username="${username}"`;
-            const profileUrl = `${POCKETBASE_URL}/api/collections/DB_users/records?filter=${encodeURIComponent(filter)}&fields=username,display_name,avatar_url,banner,about,status`;
-
-            const response = await fetch(profileUrl);
-            if (!response.ok) throw new Error(`PocketBase error: ${response.status}`);
-
-            const data = await response.json();
-            const profile = data.items && data.items.length > 0 ? data.items[0] : null;
+            const { supabaseUrl, supabaseAnonKey } = getSupabaseConfig(env);
+            const profile = await fetchProfileByUsername(supabaseUrl, supabaseAnonKey, username);
 
             if (profile) {
                 const displayName = profile.display_name || profile.username;
