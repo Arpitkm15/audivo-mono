@@ -5,6 +5,7 @@ import { SVG_RIGHT_ARROW } from './icons';
 export const apiSettings = {
     STORAGE_KEY: 'monochrome-api-instances-v9',
     BLOCKED_INSTANCE_HOSTS: ['tidal-api.binimum.org'],
+    PREFERRED_INSTANCE_URL: 'https://audivomusic.vercel.app/api',
     INSTANCES_URLS: [
         'https://tidal-uptime.jiffy-puffs-1j.workers.dev/',
         'https://tidal-uptime.props-76styles.workers.dev/',
@@ -170,6 +171,18 @@ export const apiSettings = {
             ...userUrls.map((u) => (typeof u === 'string' ? { url: u, isUser: true } : { ...u, isUser: true })),
             ...defaultUrls,
         ].filter((item) => !this.isBlockedInstance(item));
+
+        if ((type === 'api' || type === 'streaming') && this.PREFERRED_INSTANCE_URL) {
+            const preferred = this.PREFERRED_INSTANCE_URL;
+            const hasPreferred = combined.some((item) => {
+                const url = typeof item === 'string' ? item : item?.url;
+                return url === preferred;
+            });
+
+            if (!hasPreferred) {
+                combined.unshift({ url: preferred, version: 'custom' });
+            }
+        }
 
         if (combined.length === 0) return [];
 

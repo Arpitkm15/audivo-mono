@@ -26,6 +26,7 @@ import { SVG_CLOCK, SVG_ATMOS } from './icons.js';
 import { UIRenderer } from './ui.js';
 
 const TIDAL_AUDIO_HOST_PATTERN = /(^|\.)audio\.tidal\.com$/i;
+const TIDAL_MEDIA_PROXY_ROUTES = ['/tidal-media-proxy', '/__tidal_media_proxy'];
 
 function shouldUseTidalMediaProxy() {
     if (import.meta.env.DEV) return true;
@@ -35,7 +36,10 @@ function shouldUseTidalMediaProxy() {
 }
 
 function toDevTidalMediaProxyUrl(url) {
-    if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || url.startsWith('/__tidal_media_proxy')) {
+    const isAlreadyProxyUrl =
+        typeof url === 'string' && TIDAL_MEDIA_PROXY_ROUTES.some((route) => url.startsWith(route));
+
+    if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || isAlreadyProxyUrl) {
         return url;
     }
 
@@ -45,7 +49,7 @@ function toDevTidalMediaProxyUrl(url) {
             return url;
         }
 
-        return `/__tidal_media_proxy?url=${encodeURIComponent(parsed.toString())}`;
+        return `${TIDAL_MEDIA_PROXY_ROUTES[0]}?url=${encodeURIComponent(parsed.toString())}`;
     } catch {
         return url;
     }
@@ -171,14 +175,33 @@ export class Player {
             const networkingEngine = this.shakaPlayer.getNetworkingEngine();
             if (networkingEngine && typeof networkingEngine.registerRequestFilter === 'function') {
                 networkingEngine.registerRequestFilter((_type, request) => {
-                    if (!request || !Array.isArray(request.uris)) return;
+                    if (!request) return;
+
+                    const uris = Array.isArray(request.uris)
+                        ? request.uris
+                        : typeof request.uri === 'string'
+                            ? [request.uri]
+                            : [];
+
+                    if (uris.length === 0) return;
+
+                    const method = String(request.method || 'GET').toUpperCase();
 
                     // Browsers do not support HEAD for blob URLs.
-                    if (request.method === 'HEAD' && request.uris.some((uri) => typeof uri === 'string' && uri.startsWith('blob:'))) {
+                    if (method === 'HEAD' && uris.some((uri) => typeof uri === 'string' && uri.startsWith('blob:'))) {
                         request.method = 'GET';
                     }
 
-                    request.uris = request.uris.map((uri) => toDevTidalMediaProxyUrl(uri));
+                    const rewritten = uris.map((uri) => {
+                        if (typeof uri === 'string') return toDevTidalMediaProxyUrl(uri);
+                        if (uri && typeof uri.toString === 'function') return toDevTidalMediaProxyUrl(uri.toString());
+                        return uri;
+                    });
+
+                    request.uris = rewritten;
+                    if (typeof request.uri === 'string' && rewritten[0]) {
+                        request.uri = rewritten[0];
+                    }
                 });
             }
 

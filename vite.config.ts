@@ -22,12 +22,13 @@ function getGitCommitHash() {
 
 function tidalMediaDevProxyPlugin() {
     const allowedHostPattern = /(^|\.)audio\.tidal\.com$/i;
+    const proxyPaths = ['/tidal-media-proxy', '/__tidal_media_proxy'];
 
     return {
         name: 'tidal-media-dev-proxy',
         apply: 'serve' as const,
         configureServer(server: any) {
-            server.middlewares.use('/__tidal_media_proxy', async (req: IncomingMessage, res: ServerResponse) => {
+            const proxyHandler = async (req: IncomingMessage, res: ServerResponse) => {
                 if (!req.url) {
                     res.statusCode = 400;
                     res.end('Missing URL');
@@ -111,7 +112,11 @@ function tidalMediaDevProxyPlugin() {
                     res.statusCode = 502;
                     res.end('Proxy request failed');
                 }
-            });
+            };
+
+            for (const proxyPath of proxyPaths) {
+                server.middlewares.use(proxyPath, proxyHandler);
+            }
         },
     };
 }

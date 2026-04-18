@@ -35,6 +35,7 @@ export const DASH_MANIFEST_UNAVAILABLE_CODE = 'DASH_MANIFEST_UNAVAILABLE';
 export { resolveDownloadTotalBytes };
 
 const TIDAL_AUDIO_HOST_PATTERN = /(^|\.)audio\.tidal\.com$/i;
+const TIDAL_MEDIA_PROXY_ROUTES = ['/tidal-media-proxy', '/__tidal_media_proxy'];
 
 function shouldUseTidalMediaProxy() {
     if (import.meta.env.DEV) return true;
@@ -44,7 +45,10 @@ function shouldUseTidalMediaProxy() {
 }
 
 function toDevTidalMediaProxyUrl(url) {
-    if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || url.startsWith('/__tidal_media_proxy')) {
+    const isAlreadyProxyUrl =
+        typeof url === 'string' && TIDAL_MEDIA_PROXY_ROUTES.some((route) => url.startsWith(route));
+
+    if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || isAlreadyProxyUrl) {
         return url;
     }
 
@@ -54,7 +58,7 @@ function toDevTidalMediaProxyUrl(url) {
             return url;
         }
 
-        return `/__tidal_media_proxy?url=${encodeURIComponent(parsed.toString())}`;
+        return `${TIDAL_MEDIA_PROXY_ROUTES[0]}?url=${encodeURIComponent(parsed.toString())}`;
     } catch {
         return url;
     }
