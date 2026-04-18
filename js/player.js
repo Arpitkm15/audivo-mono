@@ -168,20 +168,18 @@ export class Player {
                 },
             });
 
-            if (import.meta.env.DEV) {
-                const networkingEngine = this.shakaPlayer.getNetworkingEngine();
-                if (networkingEngine && typeof networkingEngine.registerRequestFilter === 'function') {
-                    networkingEngine.registerRequestFilter((_type, request) => {
-                        if (!request || !Array.isArray(request.uris)) return;
+            const networkingEngine = this.shakaPlayer.getNetworkingEngine();
+            if (networkingEngine && typeof networkingEngine.registerRequestFilter === 'function') {
+                networkingEngine.registerRequestFilter((_type, request) => {
+                    if (!request || !Array.isArray(request.uris)) return;
 
-                        // Browsers do not support HEAD for blob URLs.
-                        if (request.method === 'HEAD' && request.uris.some((uri) => typeof uri === 'string' && uri.startsWith('blob:'))) {
-                            request.method = 'GET';
-                        }
+                    // Browsers do not support HEAD for blob URLs.
+                    if (request.method === 'HEAD' && request.uris.some((uri) => typeof uri === 'string' && uri.startsWith('blob:'))) {
+                        request.method = 'GET';
+                    }
 
-                        request.uris = request.uris.map((uri) => toDevTidalMediaProxyUrl(uri));
-                    });
-                }
+                    request.uris = request.uris.map((uri) => toDevTidalMediaProxyUrl(uri));
+                });
             }
 
             this.shakaPlayer.addEventListener('adaptation', this.updateAdaptiveQualityBadge.bind(this));
