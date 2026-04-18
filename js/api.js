@@ -34,6 +34,32 @@ import {
 export const DASH_MANIFEST_UNAVAILABLE_CODE = 'DASH_MANIFEST_UNAVAILABLE';
 export { resolveDownloadTotalBytes };
 
+const TIDAL_AUDIO_HOST_PATTERN = /(^|\.)audio\.tidal\.com$/i;
+
+function shouldUseTidalMediaProxy() {
+    if (import.meta.env.DEV) return true;
+    if (typeof window === 'undefined') return false;
+    const protocol = window.location?.protocol || '';
+    return protocol === 'http:' || protocol === 'https:';
+}
+
+function toDevTidalMediaProxyUrl(url) {
+    if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || url.startsWith('/__tidal_media_proxy')) {
+        return url;
+    }
+
+    try {
+        const parsed = new URL(url);
+        if (!TIDAL_AUDIO_HOST_PATTERN.test(parsed.hostname)) {
+            return url;
+        }
+
+        return `/__tidal_media_proxy?url=${encodeURIComponent(parsed.toString())}`;
+    } catch {
+        return url;
+    }
+}
+
 export class LosslessAPI {
     constructor(settings) {
         this.settings = settings;
@@ -1623,6 +1649,10 @@ export class LosslessAPI {
 
             if (lookup.originalTrackUrl) {
                 streamUrl = lookup.originalTrackUrl;
+            } else if (typeof lookup.info?.manifestUrl === 'string') {
+                streamUrl = lookup.info.manifestUrl;
+            } else if (typeof lookup.info?.url === 'string') {
+                streamUrl = lookup.info.url;
             } else {
                 streamUrl = this.extractStreamUrlFromManifest(lookup.info.manifest);
                 if (!streamUrl) {
@@ -1639,7 +1669,7 @@ export class LosslessAPI {
             }
         }
 
-        const result = { url: streamUrl, rgInfo: manifestRgInfo };
+        const result = { url: toDevTidalMediaProxyUrl(streamUrl), rgInfo: manifestRgInfo };
         this.streamCache.set(cacheKey, result);
 
         return result;
@@ -1685,6 +1715,8 @@ export class LosslessAPI {
         if (!streamUrl) {
             throw new Error(`Could not resolve video stream URL for ID: ${id}`);
         }
+
+        streamUrl = toDevTidalMediaProxyUrl(streamUrl);
 
         if (!(lookup instanceof TidalResponse)) {
             this.streamCache.set(cacheKey, streamUrl);
@@ -1809,7 +1841,7 @@ export class LosslessAPI {
             let blob;
 
             if (lookup.originalTrackUrl) {
-                streamUrl = lookup.originalTrackUrl;
+                streamUrl = toDevTidalMediaProxyUrl(lookup.originalTrackUrl);
             } else {
                 const findValue = (obj, key) => {
                     if (!obj || typeof obj !== 'object') return null;
@@ -1853,6 +1885,8 @@ export class LosslessAPI {
                     }
                 }
             }
+
+            streamUrl = toDevTidalMediaProxyUrl(streamUrl);
 
             // Handle DASH streams (blob URLs)
             if (streamUrl.startsWith('blob:')) {

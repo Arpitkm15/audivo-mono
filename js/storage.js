@@ -4,6 +4,7 @@ import { SVG_RIGHT_ARROW } from './icons';
 
 export const apiSettings = {
     STORAGE_KEY: 'monochrome-api-instances-v9',
+    BLOCKED_INSTANCE_HOSTS: ['tidal-api.binimum.org'],
     INSTANCES_URLS: [
         'https://tidal-uptime.jiffy-puffs-1j.workers.dev/',
         'https://tidal-uptime.props-76styles.workers.dev/',
@@ -26,6 +27,20 @@ export const apiSettings = {
 
     _saveUserInstances() {
         localStorage.setItem('monochrome-user-api-instances-v1', JSON.stringify(this.userInstances));
+    },
+
+    isBlockedInstance(item) {
+        const rawUrl = typeof item === 'string' ? item : item?.url;
+        if (!rawUrl) return false;
+
+        let hostname = '';
+        try {
+            hostname = new URL(rawUrl).hostname.toLowerCase();
+        } catch {
+            hostname = String(rawUrl).toLowerCase();
+        }
+
+        return this.BLOCKED_INSTANCE_HOSTS.some((blocked) => hostname === blocked || hostname.endsWith(`.${blocked}`));
     },
 
     async loadInstancesFromGitHub() {
@@ -107,7 +122,7 @@ export const apiSettings = {
 
             const isBlockedInstance = (item) => {
                 const url = typeof item === 'string' ? item : item.url;
-                return url && /\.squid\.wtf/i.test(url);
+                return (url && /\.squid\.wtf/i.test(url)) || this.isBlockedInstance(item);
             };
 
             if (data.api && Array.isArray(data.api)) {
@@ -154,7 +169,7 @@ export const apiSettings = {
         const combined = [
             ...userUrls.map((u) => (typeof u === 'string' ? { url: u, isUser: true } : { ...u, isUser: true })),
             ...defaultUrls,
-        ];
+        ].filter((item) => !this.isBlockedInstance(item));
 
         if (combined.length === 0) return [];
 

@@ -5,6 +5,8 @@ import path from 'path';
 import uploadPlugin from './vite-plugin-upload.js';
 import blobAssetPlugin from './vite-plugin-blob.js';
 import svgUse from './vite-plugin-svg-use.js';
+import { Readable } from 'node:stream';
+import type { IncomingMessage, ServerResponse } from 'node:http';
 // import purgecss from 'vite-plugin-purgecss';
 import purgecss from 'vite-plugin-purgecss';
 import { execSync } from 'child_process';
@@ -16,6 +18,102 @@ function getGitCommitHash() {
     } catch {
         return 'unknown';
     }
+}
+
+function tidalMediaDevProxyPlugin() {
+    const allowedHostPattern = /(^|\.)audio\.tidal\.com$/i;
+
+    return {
+        name: 'tidal-media-dev-proxy',
+        apply: 'serve' as const,
+        configureServer(server: any) {
+            server.middlewares.use('/__tidal_media_proxy', async (req: IncomingMessage, res: ServerResponse) => {
+                if (!req.url) {
+                    res.statusCode = 400;
+                    res.end('Missing URL');
+                    return;
+                }
+
+                const requestUrl = new URL(req.url, 'http://localhost');
+                const targetRaw = requestUrl.searchParams.get('url');
+
+                if (!targetRaw) {
+                    res.statusCode = 400;
+                    res.end('Missing target URL');
+                    return;
+                }
+
+                let targetUrl;
+                try {
+                    targetUrl = new URL(targetRaw);
+                } catch {
+                    res.statusCode = 400;
+                    res.end('Invalid target URL');
+                    return;
+                }
+
+                if (targetUrl.protocol !== 'https:' || !allowedHostPattern.test(targetUrl.hostname)) {
+                    res.statusCode = 403;
+                    res.end('Blocked target host');
+                    return;
+                }
+
+                const method = req.method || 'GET';
+                if (method !== 'GET' && method !== 'HEAD') {
+                    res.statusCode = 405;
+                    res.end('Method not allowed');
+                    return;
+                }
+
+                const headers = new Headers();
+                const passThroughHeaders = ['range', 'if-range', 'accept', 'user-agent'];
+                for (const headerName of passThroughHeaders) {
+                    const value = req.headers[headerName];
+                    if (typeof value === 'string' && value.length > 0) {
+                        headers.set(headerName, value);
+                    }
+                }
+
+                try {
+                    const upstream = await fetch(targetUrl.toString(), {
+                        method,
+                        headers,
+                        redirect: 'follow',
+                    });
+
+                    res.statusCode = upstream.status;
+
+                    const responseHeaders = [
+                        'content-type',
+                        'content-length',
+                        'accept-ranges',
+                        'content-range',
+                        'etag',
+                        'last-modified',
+                        'cache-control',
+                        'expires',
+                    ];
+
+                    for (const headerName of responseHeaders) {
+                        const value = upstream.headers.get(headerName);
+                        if (value) {
+                            res.setHeader(headerName, value);
+                        }
+                    }
+
+                    if (method === 'HEAD' || !upstream.body) {
+                        res.end();
+                        return;
+                    }
+
+                    Readable.fromWeb(upstream.body).pipe(res);
+                } catch {
+                    res.statusCode = 502;
+                    res.end('Proxy request failed');
+                }
+            });
+        },
+    };
 }
 
 export default defineConfig((_options) => {
@@ -79,6 +177,7 @@ export default defineConfig((_options) => {
             },
         },
         plugins: [
+            tidalMediaDevProxyPlugin(),
             purgecss({
                 variables: false, // DO NOT REMOVE UNUSED VARIABLES (breaks web components like am-lyrics)
                 safelist: {

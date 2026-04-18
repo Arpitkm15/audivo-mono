@@ -25,6 +25,32 @@ import { db } from './db.js';
 import { SVG_CLOCK, SVG_ATMOS } from './icons.js';
 import { UIRenderer } from './ui.js';
 
+const TIDAL_AUDIO_HOST_PATTERN = /(^|\.)audio\.tidal\.com$/i;
+
+function shouldUseTidalMediaProxy() {
+    if (import.meta.env.DEV) return true;
+    if (typeof window === 'undefined') return false;
+    const protocol = window.location?.protocol || '';
+    return protocol === 'http:' || protocol === 'https:';
+}
+
+function toDevTidalMediaProxyUrl(url) {
+    if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || url.startsWith('/__tidal_media_proxy')) {
+        return url;
+    }
+
+    try {
+        const parsed = new URL(url);
+        if (!TIDAL_AUDIO_HOST_PATTERN.test(parsed.hostname)) {
+            return url;
+        }
+
+        return `/__tidal_media_proxy?url=${encodeURIComponent(parsed.toString())}`;
+    } catch {
+        return url;
+    }
+}
+
 export class Player {
     static #instance = null;
 
@@ -141,6 +167,23 @@ export class Player {
                     codecSwitchingStrategy: 'smooth',
                 },
             });
+
+            if (import.meta.env.DEV) {
+                const networkingEngine = this.shakaPlayer.getNetworkingEngine();
+                if (networkingEngine && typeof networkingEngine.registerRequestFilter === 'function') {
+                    networkingEngine.registerRequestFilter((_type, request) => {
+                        if (!request || !Array.isArray(request.uris)) return;
+
+                        // Browsers do not support HEAD for blob URLs.
+                        if (request.method === 'HEAD' && request.uris.some((uri) => typeof uri === 'string' && uri.startsWith('blob:'))) {
+                            request.method = 'GET';
+                        }
+
+                        request.uris = request.uris.map((uri) => toDevTidalMediaProxyUrl(uri));
+                    });
+                }
+            }
+
             this.shakaPlayer.addEventListener('adaptation', this.updateAdaptiveQualityBadge.bind(this));
             this.shakaPlayer.addEventListener('variantchanged', this.updateAdaptiveQualityBadge.bind(this));
 
@@ -964,6 +1007,7 @@ export class Player {
 
             if (isPodcast) {
                 streamUrl = track.enclosureUrl;
+                streamUrl = toDevTidalMediaProxyUrl(streamUrl);
                 if (!streamUrl) {
                     console.warn(`Podcast episode ${trackTitle} audio URL is missing. Skipping.`);
                     track.isUnavailable = true;
@@ -996,6 +1040,8 @@ export class Player {
                 ) {
                     streamUrl = track.remoteUrl;
                 }
+
+                streamUrl = toDevTidalMediaProxyUrl(streamUrl);
 
                 if (!streamUrl) {
                     console.warn(`Track ${trackTitle} audio URL is missing. Skipping.`);
