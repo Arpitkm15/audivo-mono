@@ -26,7 +26,17 @@ import { SVG_CLOCK, SVG_ATMOS } from './icons.js';
 import { UIRenderer } from './ui.js';
 
 const TIDAL_AUDIO_HOST_PATTERN = /(^|\.)audio\.tidal\.com$/i;
-const TIDAL_MEDIA_PROXY_ROUTES = ['/tidal-media-proxy', '/__tidal_media_proxy'];
+const TIDAL_MEDIA_PROXY_ROUTES = [
+    '/tidal-media-proxy',
+    '/api/tidal-media-proxy',
+    '/functions/tidal-media-proxy',
+    '/__tidal_media_proxy',
+    '/api/__tidal_media_proxy',
+    '/functions/__tidal_media_proxy',
+];
+
+let resolvedTidalMediaProxyRoute = null;
+let tidalMediaProxyRouteProbePromise = null;
 
 function shouldUseTidalMediaProxy() {
     if (import.meta.env.DEV) return true;
@@ -35,24 +45,77 @@ function shouldUseTidalMediaProxy() {
     return protocol === 'http:' || protocol === 'https:';
 }
 
-function toDevTidalMediaProxyUrl(url) {
-    const isAlreadyProxyUrl =
-        typeof url === 'string' && TIDAL_MEDIA_PROXY_ROUTES.some((route) => url.startsWith(route));
+async function resolveTidalMediaProxyRoute() {
+    if (resolvedTidalMediaProxyRoute) {
+        return resolvedTidalMediaProxyRoute;
+    }
+
+    if (tidalMediaProxyRouteProbePromise) {
+        return tidalMediaProxyRouteProbePromise;
+    }
+
+    if (!shouldUseTidalMediaProxy() || typeof window === 'undefined' || typeof fetch !== 'function') {
+        return null;
+    }
+
+    tidalMediaProxyRouteProbePromise = (async () => {
+        for (const route of TIDAL_MEDIA_PROXY_ROUTES) {
+            try {
+                const response = await fetch(route, {
+                    method: 'GET',
+                    credentials: 'same-origin',
+                });
+
+                // Existing proxy route returns 400 without query param.
+                if (response.status !== 404) {
+                    resolvedTidalMediaProxyRoute = route;
+                    return route;
+                }
+            } catch {
+                // Continue trying the next candidate route.
+            }
+        }
+
+        return null;
+    })();
+
+    try {
+        return await tidalMediaProxyRouteProbePromise;
+    } finally {
+        tidalMediaProxyRouteProbePromise = null;
+    }
+}
+
+function toTidalMediaProxyUrls(url) {
+    const isAlreadyProxyUrl = typeof url === 'string' && TIDAL_MEDIA_PROXY_ROUTES.some((route) => url.startsWith(route));
 
     if (!shouldUseTidalMediaProxy() || typeof url !== 'string' || isAlreadyProxyUrl) {
-        return url;
+        return typeof url === 'string' ? [url] : [];
     }
 
     try {
         const parsed = new URL(url);
         if (!TIDAL_AUDIO_HOST_PATTERN.test(parsed.hostname)) {
-            return url;
+            return [url];
         }
 
-        return `${TIDAL_MEDIA_PROXY_ROUTES[0]}?url=${encodeURIComponent(parsed.toString())}`;
+        const orderedRoutes = resolvedTidalMediaProxyRoute
+            ? [resolvedTidalMediaProxyRoute, ...TIDAL_MEDIA_PROXY_ROUTES]
+            : TIDAL_MEDIA_PROXY_ROUTES;
+        const dedupedRoutes = Array.from(new Set(orderedRoutes));
+
+        return [
+            ...dedupedRoutes.map((route) => `${route}?url=${encodeURIComponent(parsed.toString())}`),
+            parsed.toString(),
+        ];
     } catch {
-        return url;
+        return [url];
     }
+}
+
+function toDevTidalMediaProxyUrl(url) {
+    const candidates = toTidalMediaProxyUrls(url);
+    return candidates[0] || url;
 }
 
 export class Player {
@@ -119,6 +182,9 @@ export class Player {
     }
 
     async init() {
+        // Probe once on startup so first playback selects the right deployment route.
+        void resolveTidalMediaProxyRoute();
+
         // Apply audio effects when track is ready
         this.audio.addEventListener('canplay', () => {
             this.applyAudioEffects();
@@ -192,15 +258,27 @@ export class Player {
                         request.method = 'GET';
                     }
 
-                    const rewritten = uris.map((uri) => {
-                        if (typeof uri === 'string') return toDevTidalMediaProxyUrl(uri);
-                        if (uri && typeof uri.toString === 'function') return toDevTidalMediaProxyUrl(uri.toString());
-                        return uri;
-                    });
+                    const rewritten = [];
+                    for (const uri of uris) {
+                        const asString =
+                            typeof uri === 'string'
+                                ? uri
+                                : uri && typeof uri.toString === 'function'
+                                    ? uri.toString()
+                                    : null;
 
-                    request.uris = rewritten;
-                    if (typeof request.uri === 'string' && rewritten[0]) {
-                        request.uri = rewritten[0];
+                        if (!asString) continue;
+
+                        rewritten.push(...toTidalMediaProxyUrls(asString));
+                    }
+
+                    const dedupedRewritten = Array.from(new Set(rewritten));
+
+                    if (dedupedRewritten.length > 0) {
+                        request.uris = dedupedRewritten;
+                    }
+                    if (typeof request.uri === 'string' && dedupedRewritten[0]) {
+                        request.uri = dedupedRewritten[0];
                     }
                 });
             }
@@ -1021,6 +1099,8 @@ export class Player {
         this.updateMediaSessionPlaybackState();
 
         try {
+            await resolveTidalMediaProxyRoute();
+
             let streamUrl;
 
             const isTracker = track.isTracker || (track.id && String(track.id).startsWith('tracker-'));

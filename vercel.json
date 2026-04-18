@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/tidal-media-proxy",
+      "destination": "/api/tidal-media-proxy"
+    },
+    {
+      "source": "/__tidal_media_proxy",
+      "destination": "/api/tidal-media-proxy"
+    },
+    {
+      "source": "/functions/tidal-media-proxy",
+      "destination": "/api/tidal-media-proxy"
+    },
+    {
+      "source": "/functions/__tidal_media_proxy",
+      "destination": "/api/tidal-media-proxy"
+    }
+  ]
+}
