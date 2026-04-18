@@ -174,6 +174,59 @@ const HOME_POPULAR_ARTISTS = [
     'Mitta Ror',
 ];
 
+const TOP_TRENDING_SEARCH_SEEDS = [
+    ['Bairan', 'Banjaare'],
+    ['Dhurandhar', 'Shashwat Sachdev;Arijit Singh;Irshad Kamil;Armaan Khan'],
+    ['Dhurandhar The Revenge', 'Shashwat Sachdev;Jasmine Sandlas;Satinder Sartaaj'],
+    ['Khat', 'Navjot Ahuja'],
+    ['Sheesha (Aakhya Mai Aakh Ghali Jo Bairan)', 'Mitta Ror;Swara Verma'],
+    ['Sitaare (From "Ikkis")', 'Arijit Singh;White Noise Collectives;Amitabh Bhattacharya'],
+    ['Sahiba', 'Aditya Rikhari'],
+    ['Dooron Dooron', 'Paresh Pahuja;Shiv Tandan;Meghdeep Bose'],
+    ['Majboor', 'Sheheryar Rehan;Zoha Waseem'],
+    ['Finding Her', 'Kushagra;Bharath;Saaheal'],
+    ['Samjhawan', 'Jawad Ahmad;Shaarib Toshi;Arijit Singh;Shreya Ghoshal'],
+    ['Pavazha Malli (From "Think Indie")', 'Sai Abhyankkar;Shruti Haasan;Vivek'],
+    ['Arz Kiya Hai | Coke Studio Bharat', 'Anuv Jain'],
+    ['Bhediya (Original Motion Picture Soundtrack)', 'Sachin-Jigar;Arijit Singh;Amitabh Bhattacharya'],
+    ['P-POP CULTURE', 'Karan Aujla;Ikky'],
+    ['Dhurandhar The Revenge', 'Shashwat Sachdev;Bombay Rockers;Irshad Kamil;Khan Saab;Reble;Token;Jasmine Sandlas;Sudhir Yaduvanshi'],
+    ['Dhurandhar The Revenge', 'Shashwat Sachdev;Khan Saab;Nusrat Fateh Ali Khan'],
+    ['Lost;Found', 'Faheem Abdullah;Rauhan Malik;Amir Ameer'],
+    ['Table No. 21 (Original Motion Picture Soundtrack)', 'Gajendra Verma'],
+    ['Dhurandhar', 'Shashwat Sachdev;Madhubanti Bagchi;Jasmine Sandlas'],
+    ['P-POP CULTURE', 'Karan Aujla;Ikky'],
+    ['Saiyaara', 'Tanishk Bagchi;Faheem Abdullah;Arslan Nizami;Irshad Kamil'],
+    ['Tum Ho Toh (From "Saiyaara")', 'Vishal Mishra;Hansika Pareek;Raj Shekhar'],
+    ['Ishqa Ve', 'Zeeshan Ali;Yuvraj Tung;Sandeep Aulakh;Honey Dhillon'],
+    ['Tere Ishk Mein', 'A.R. Rahman;Irshad Kamil'],
+    ['Raanjhan (From "Do Patti")', 'Sachet-Parampara;Parampara Tandon;Kausar Munir'],
+    ['Shivaay', 'Mithoon;Arijit Singh;Sunidhi Chauhan;Sayeed Quadri'],
+    ['Best of Romance: Atif Aslam', 'Atif Aslam;Shreya Ghoshal;Sachin Gupta;Sameer Anjaan'],
+    ['Dhurandhar', 'Shashwat Sachdev;Hanumankind;Jasmine Sandlas;Sudhir Yaduvanshi;Charanjit Ahuja;Muhammad Sadiq;Ranjit Kaur;Babu Singh Maan'],
+    ['Dhurandhar', 'Shashwat Sachdev;Afsana Khan;Irshad Kamil;Reble'],
+    ['Guru (Original Motion Picture Soundtrack)', 'A.R. Rahman;Chinmayi;Murtuza Khan;Qadir Khan'],
+    ['Love Wali Feeling: Valentine Special', 'Alka Yagnik;Arijit Singh'],
+    ['Dhurandhar The Revenge', 'Shashwat Sachdev;Arijit Singh;Irshad Kamil'],
+    ['Jo Tum Mere Ho', 'Anuv Jain'],
+    ['Ehsaas', 'Faheem Abdullah;Duha Shah;Vaibhav Pani;Hyder Dar'],
+    ['Bairi', 'Virat;Pradeep Solanki;Heena'],
+    ['Once Upon Ay Time In Mumbai Dobaara !', 'Pritam;Javed Bashir;Rajat Arora'],
+    ['Dhurandhar', 'Shashwat Sachdev;Simran Choudhary'],
+    ['Barbaad (From "Saiyaara")', 'The Rish;Jubin Nautiyal'],
+    ['Haseen', 'Talwiinder;NDS;Rippy Grewal'],
+    ['Dhurandhar', 'Shashwat Sachdev;Reble;Asha Bhosle;R. D. Burman;Majrooh Sultanpuri'],
+    ['Love Dose Arijit Singh', 'Arijit Singh;Chinmayi'],
+    ['Kailasa', 'Kailash Kher;Paresh Kamath;Naresh Kamath'],
+    ['Jhol - Acoustic', 'Maanu;Annural Khalid;Abdullah Siddiqui'],
+    ['Youth (Original Motion Picture Soundtrack)', 'G. V. Prakash;Ken Karunaas'],
+    ['The Arijit Singh Collection', 'Arijit Singh;Harshdeep Kaur'],
+    ['Aaya Sher (From "The Paradise") (Telugu)', 'Anirudh Ravichander;Jangi Reddy;Arjun Chandy;Kasarla Shyam'],
+    ['Dhun (From "Saiyaara")', 'Mithoon;Arijit Singh'],
+    ['Mann Mera (Original Version)', 'Gajendra Verma'],
+    ['High On You', 'Jind Universe'],
+];
+
 const slugifyText = (value) =>
     String(value || '')
         .trim()
@@ -261,6 +314,8 @@ export class UIRenderer {
         this.player = player;
         this.currentTrack = null;
         this.searchAbortController = null;
+        this.searchSuggestionAbortController = null;
+        this.searchSuggestionCoverByQuery = new Map();
         this.vibrantColorCache = new Map();
         this.visualizer = null;
         this.renderLock = false;
@@ -275,6 +330,7 @@ export class UIRenderer {
         this.popularArtistsCache = null;
         this.popularArtistsPage = 0;
         this.spotifyTrendingSongsPage = 0;
+        this.curatedTrendingSearchSeedsCache = null;
 
         // Listen for dynamic color reset events
         window.addEventListener('reset-dynamic-color', () => {
@@ -743,9 +799,9 @@ export class UIRenderer {
         `;
     }
 
-    createPlaylistCardHTML(playlist) {
+    createPlaylistCardHTML(playlist, forceCompact = false) {
         const imageId = playlist.squareImage || playlist.image || playlist.uuid;
-        const isCompact = cardSettings.isCompactAlbum();
+        const isCompact = forceCompact || cardSettings.isCompactAlbum();
 
         return this.createBaseCardHTML({
             type: 'playlist',
@@ -779,10 +835,10 @@ export class UIRenderer {
         });
     }
 
-    createMixCardHTML(mix) {
+    createMixCardHTML(mix, forceCompact = false) {
         const imageSrc = mix.cover || '/icon.jpg';
         const description = mix.subTitle || mix.description || '';
-        const isCompact = cardSettings.isCompactAlbum();
+        const isCompact = forceCompact || cardSettings.isCompactAlbum();
 
         return this.createBaseCardHTML({
             type: 'mix',
@@ -800,7 +856,7 @@ export class UIRenderer {
         });
     }
 
-    createUserPlaylistCardHTML(playlist, customSubtitle = null) {
+    createUserPlaylistCardHTML(playlist, customSubtitle = null, forceCompact = false) {
         let imageHTML = '';
         if (playlist.cover) {
             imageHTML = this.getCoverHTML(
@@ -844,7 +900,7 @@ export class UIRenderer {
             }
         }
 
-        const isCompact = cardSettings.isCompactAlbum();
+        const isCompact = forceCompact || cardSettings.isCompactAlbum();
         const subtitle =
             customSubtitle || `${playlist.tracks ? playlist.tracks.length : playlist.numberOfTracks || 0} tracks`;
 
@@ -870,7 +926,7 @@ export class UIRenderer {
         });
     }
 
-    createAlbumCardHTML(album) {
+    createAlbumCardHTML(album, forceCompact = false) {
         const explicitBadge = hasExplicitContent(album) ? this.createExplicitBadge() : '';
         const qualityBadge = createQualityBadgeHTML(album);
         const isBlocked = contentBlockingSettings?.shouldHideAlbum(album);
@@ -884,7 +940,7 @@ export class UIRenderer {
         if (album.type === 'EP') typeLabel = ' • EP';
         else if (album.type === 'SINGLE') typeLabel = ' • Single';
 
-        const isCompact = cardSettings.isCompactAlbum();
+        const isCompact = forceCompact || cardSettings.isCompactAlbum();
         let artistName = '';
         if (album.artist) {
             artistName = typeof album.artist === 'string' ? album.artist : album.artist.name;
@@ -2781,16 +2837,29 @@ export class UIRenderer {
             if (welcomeEl) welcomeEl.style.display = hasActivity ? 'none' : 'block';
             if (contentEl) contentEl.style.display = 'block';
 
-            const refreshSongsBtn = document.getElementById('refresh-songs-btn');
-            const refreshTrendingSongsBtn = document.getElementById('refresh-trending-songs-btn');
-            const refreshAlbumsBtn = document.getElementById('refresh-albums-btn');
-            const refreshArtistsBtn = document.getElementById('refresh-artists-btn');
+            const prevSongsBtn = document.getElementById('prev-songs-btn');
+            const nextSongsBtn = document.getElementById('next-songs-btn');
+            const prevTrendingSongsBtn = document.getElementById('prev-trending-songs-btn');
+            const nextTrendingSongsBtn = document.getElementById('next-trending-songs-btn');
+            const prevRecentBtn = document.getElementById('prev-recent-btn');
+            const nextRecentBtn = document.getElementById('next-recent-btn');
+            const prevAlbumsBtn = document.getElementById('prev-albums-btn');
+            const nextAlbumsBtn = document.getElementById('next-albums-btn');
+            const prevArtistsBtn = document.getElementById('prev-artists-btn');
+            const nextArtistsBtn = document.getElementById('next-artists-btn');
             const clearRecentBtn = document.getElementById('clear-recent-btn');
 
-            if (refreshSongsBtn) refreshSongsBtn.onclick = () => this.renderHomeSongs(true);
-            if (refreshTrendingSongsBtn) refreshTrendingSongsBtn.onclick = () => this.renderHomeTrendingSongs(true);
-            if (refreshAlbumsBtn) refreshAlbumsBtn.onclick = () => this.renderHomeAlbums(true);
-            if (refreshArtistsBtn) refreshArtistsBtn.onclick = () => this.renderHomeArtists(true);
+            if (prevSongsBtn) prevSongsBtn.onclick = () => this.scrollHomeRail('home-recommended-songs', 'prev');
+            if (nextSongsBtn) nextSongsBtn.onclick = () => this.scrollHomeRail('home-recommended-songs');
+            if (prevTrendingSongsBtn)
+                prevTrendingSongsBtn.onclick = () => this.scrollHomeRail('home-trending-songs', 'prev');
+            if (nextTrendingSongsBtn) nextTrendingSongsBtn.onclick = () => this.scrollHomeRail('home-trending-songs');
+            if (prevRecentBtn) prevRecentBtn.onclick = () => this.scrollHomeRail('home-recent-mixed', 'prev');
+            if (nextRecentBtn) nextRecentBtn.onclick = () => this.scrollHomeRail('home-recent-mixed');
+            if (prevAlbumsBtn) prevAlbumsBtn.onclick = () => this.scrollHomeRail('home-recommended-albums', 'prev');
+            if (nextAlbumsBtn) nextAlbumsBtn.onclick = () => this.scrollHomeRail('home-recommended-albums');
+            if (prevArtistsBtn) prevArtistsBtn.onclick = () => this.scrollHomeRail('home-recommended-artists', 'prev');
+            if (nextArtistsBtn) nextArtistsBtn.onclick = () => this.scrollHomeRail('home-recommended-artists');
             if (clearRecentBtn)
                 clearRecentBtn.onclick = async () => {
                     if (confirm('Clear recent activity?')) {
@@ -3086,8 +3155,13 @@ export class UIRenderer {
         if (section) section.style.display = '';
 
         if (songsContainer) {
+            songsContainer.classList.add('home-song-rail');
+            songsContainer.classList.add('card-grid');
+        }
+
+        if (songsContainer) {
             if (forceRefresh || songsContainer.children.length === 0) {
-                songsContainer.innerHTML = this.createSkeletonTracks(10, true);
+                this.setHomeRailLoadingState(songsContainer);
             } else if (!songsContainer.querySelector('.skeleton')) {
                 return; // Already loaded
             }
@@ -3115,7 +3189,15 @@ export class UIRenderer {
                 this.lastRecommendedTracks = filteredTracks;
 
                 if (filteredTracks.length > 0) {
-                    await this.renderListWithTracks(songsContainer, filteredTracks, true, false, false, true);
+                    songsContainer.innerHTML = filteredTracks.map((track) => this.createTrackCardHTML(track)).join('');
+                    songsContainer.scrollLeft = 0;
+                    for (const track of filteredTracks) {
+                        const el = songsContainer.querySelector(`[data-track-id="${track.id}"]`);
+                        if (el) {
+                            trackDataStore.set(el, track);
+                            await this.updateLikeState(el, track.type === 'video' ? 'video' : 'track', track.id);
+                        }
+                    }
                 } else {
                     songsContainer.innerHTML = createPlaceholder(
                         'Tell us more about what you like so we can recommend songs!'
@@ -3135,8 +3217,11 @@ export class UIRenderer {
         if (section) section.style.display = '';
         if (!songsContainer) return;
 
+        songsContainer.classList.add('home-song-rail');
+        songsContainer.classList.add('card-grid');
+
         if (forceRefresh || songsContainer.children.length === 0) {
-            songsContainer.innerHTML = this.createSkeletonTracks(10, true);
+            songsContainer.innerHTML = this.createSkeletonCards(6);
         } else if (!songsContainer.querySelector('.skeleton')) {
             return;
         }
@@ -3144,37 +3229,14 @@ export class UIRenderer {
         try {
             const trendingTracks = await this.getSpotifyTrendingTracks(forceRefresh);
             if (trendingTracks.length > 0) {
-                const totalPages = Math.max(1, Math.ceil(trendingTracks.length / HOME_TRENDING_PAGE_SIZE));
-
-                if (forceRefresh) {
-                    this.spotifyTrendingSongsPage = (this.spotifyTrendingSongsPage + 1) % totalPages;
-                } else if (!Number.isInteger(this.spotifyTrendingSongsPage) || this.spotifyTrendingSongsPage < 0) {
-                    this.spotifyTrendingSongsPage = 0;
-                } else if (this.spotifyTrendingSongsPage >= totalPages) {
-                    this.spotifyTrendingSongsPage = 0;
-                }
-
-                const pageStart = this.spotifyTrendingSongsPage * HOME_TRENDING_PAGE_SIZE;
-                const pageTracks = trendingTracks.slice(pageStart, pageStart + HOME_TRENDING_PAGE_SIZE);
-                const halfPageSize = HOME_TRENDING_PAGE_SIZE / 2;
-                const leftTracks = pageTracks.slice(0, halfPageSize);
-                const rightTracks = pageTracks.slice(halfPageSize, HOME_TRENDING_PAGE_SIZE);
-
-                songsContainer.innerHTML = `
-                    <div class="home-trending-columns">
-                        <div class="track-list home-trending-column" id="home-trending-songs-left"></div>
-                        <div class="track-list home-trending-column" id="home-trending-songs-right"></div>
-                    </div>
-                `;
-
-                const leftContainer = document.getElementById('home-trending-songs-left');
-                const rightContainer = document.getElementById('home-trending-songs-right');
-
-                if (leftContainer) {
-                    await this.renderListWithTracks(leftContainer, leftTracks, true, false, false, true);
-                }
-                if (rightContainer) {
-                    await this.renderListWithTracks(rightContainer, rightTracks, true, false, false, true);
+                songsContainer.innerHTML = trendingTracks.map((track) => this.createTrackCardHTML(track)).join('');
+                songsContainer.scrollLeft = 0;
+                for (const track of trendingTracks) {
+                    const el = songsContainer.querySelector(`[data-track-id="${track.id}"]`);
+                    if (el) {
+                        trackDataStore.set(el, track);
+                        await this.updateLikeState(el, track.type === 'video' ? 'video' : 'track', track.id);
+                    }
                 }
             } else {
                 songsContainer.innerHTML = createPlaceholder('No trending songs found.');
@@ -3267,13 +3329,69 @@ export class UIRenderer {
             uniqueTracks.push(track);
         }
 
+        const rankedTracks = this.rankIndiaTrendingTracks(uniqueTracks);
+
         this.spotifyHomeTrendingTracksCache = {
             timestamp: now,
             playlistId: SPOTIFY_HOME_PLAYLIST_ID,
-            tracks: uniqueTracks,
+            tracks: rankedTracks,
         };
 
-        return uniqueTracks;
+        return rankedTracks;
+    }
+
+    rankIndiaTrendingTracks(tracks = []) {
+        if (!Array.isArray(tracks) || tracks.length <= 1) return tracks;
+
+        const indianArtistSet = new Set(
+            HOME_POPULAR_ARTISTS.map((name) => String(name || '').trim().toLowerCase()).filter(Boolean)
+        );
+
+        return tracks
+            .map((track, index) => {
+                const hindiScore =
+                    typeof this.api.getHindiPriorityScore === 'function' ? this.api.getHindiPriorityScore(track) : 0;
+
+                const artistNames = [
+                    track?.artist?.name,
+                    ...(Array.isArray(track?.artists) ? track.artists.map((artist) => artist?.name) : []),
+                ]
+                    .filter((value) => typeof value === 'string')
+                    .map((value) => value.toLowerCase().trim());
+
+                const hasPopularIndianArtist = artistNames.some((name) => indianArtistSet.has(name));
+                const score = hindiScore * 10 + (hasPopularIndianArtist ? 30 : 0);
+
+                return { track, index, score };
+            })
+            .sort((a, b) => b.score - a.score || a.index - b.index)
+            .map((entry) => entry.track);
+    }
+
+    scrollHomeRail(containerId, direction = 'next') {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const maxScrollLeft = container.scrollWidth - container.clientWidth;
+        if (maxScrollLeft <= 0) return;
+
+        const step = Math.max(container.clientWidth * 0.9, 280);
+        const delta = direction === 'prev' ? -step : step;
+        const nextScrollLeft = container.scrollLeft + delta;
+
+        if (direction === 'prev' && nextScrollLeft <= 8) {
+            container.scrollTo({ left: 0, behavior: 'smooth' });
+        } else if (direction !== 'prev' && nextScrollLeft >= maxScrollLeft - 8) {
+            container.scrollTo({ left: 0, behavior: 'smooth' });
+        } else {
+            container.scrollTo({ left: nextScrollLeft, behavior: 'smooth' });
+        }
+    }
+
+    setHomeRailLoadingState(container) {
+        if (!container) return;
+
+        container.innerHTML = `<div style="grid-column: 1/-1; padding: 0.35rem 0 1rem;">${createPlaceholder('Just a moment ,great music is on the way.')}</div>`;
     }
 
     async renderHomeAlbums(forceRefresh = false, providedSeeds = null, retryCount = 0) {
@@ -3288,8 +3406,13 @@ export class UIRenderer {
         if (section) section.style.display = '';
 
         if (albumsContainer) {
+            albumsContainer.classList.add('home-song-rail');
+            albumsContainer.classList.add('card-grid');
+        }
+
+        if (albumsContainer) {
             if (forceRefresh || albumsContainer.children.length === 0) {
-                albumsContainer.innerHTML = this.createSkeletonCards(5);
+                this.setHomeRailLoadingState(albumsContainer);
             } else if (!albumsContainer.querySelector('.skeleton') && !forceRefresh) {
                 return;
             }
@@ -3306,6 +3429,7 @@ export class UIRenderer {
                             .slice(0, 12)
                             .map((a) => this.createAlbumCardHTML(a))
                             .join('');
+                        albumsContainer.scrollLeft = 0;
                         for (const a of filteredAlbums.slice(0, 12)) {
                             const el = albumsContainer.querySelector(`[data-album-id="${a.id}"]`);
                             if (el) {
@@ -3568,6 +3692,9 @@ export class UIRenderer {
         if (section) section.style.display = '';
 
         if (artistsContainer) {
+            artistsContainer.classList.add('home-song-rail');
+            artistsContainer.classList.add('card-grid');
+
             if (forceRefresh || artistsContainer.children.length === 0) {
                 artistsContainer.innerHTML = this.createSkeletonCards(12, true);
             } else if (!artistsContainer.querySelector('.skeleton')) {
@@ -3577,28 +3704,18 @@ export class UIRenderer {
             try {
                 const popularArtists = await this.getPopularArtists(forceRefresh);
                 const filteredArtists = await this.filterUserContent(popularArtists, 'artist');
-                const totalPages = Math.max(1, Math.ceil(filteredArtists.length / HOME_POPULAR_ARTISTS_PAGE_SIZE));
 
-                if (forceRefresh) {
-                    this.popularArtistsPage = (this.popularArtistsPage + 1) % totalPages;
-                } else if (!Number.isInteger(this.popularArtistsPage) || this.popularArtistsPage < 0) {
-                    this.popularArtistsPage = 0;
-                } else if (this.popularArtistsPage >= totalPages) {
-                    this.popularArtistsPage = 0;
-                }
-
-                const pageStart = this.popularArtistsPage * HOME_POPULAR_ARTISTS_PAGE_SIZE;
-                const pageArtists = filteredArtists.slice(pageStart, pageStart + HOME_POPULAR_ARTISTS_PAGE_SIZE);
-
-                if (pageArtists.length > 0) {
-                    artistsContainer.innerHTML = pageArtists
+                if (filteredArtists.length > 0) {
+                    artistsContainer.innerHTML = filteredArtists
                         .map((artist) =>
                             artist._popularFallback
                                 ? this.createPopularArtistFallbackCardHTML(artist)
                                 : this.createArtistCardHTML(artist)
                         )
                         .join('');
-                    for (const artist of pageArtists) {
+                    artistsContainer.scrollLeft = 0;
+
+                    for (const artist of filteredArtists) {
                         if (artist._popularFallback) continue;
                         const el = artistsContainer.querySelector(`[data-artist-id="${artist.id}"]`);
                         if (el) {
@@ -3834,6 +3951,9 @@ export class UIRenderer {
         if (section) section.style.display = '';
 
         if (recentContainer) {
+            recentContainer.classList.add('home-song-rail');
+            recentContainer.classList.add('card-grid');
+
             const recents = recentActivityManager.getRecents();
             const items = [];
 
@@ -3857,6 +3977,8 @@ export class UIRenderer {
                         return '';
                     })
                     .join('');
+
+                recentContainer.scrollLeft = 0;
 
                 for (const item of displayItems) {
                     let selector = '';
@@ -4069,6 +4191,9 @@ export class UIRenderer {
             let finalAlbums = (results.albums && results.albums.items) || [];
             let finalPlaylists = (results.playlists && results.playlists.items) || [];
 
+            finalTracks = await this.ensureCuratedTopSearchTracks(query, finalTracks, signal);
+            finalTracks = this.prioritizeCuratedTopSearchTracks(query, finalTracks);
+
             if (finalArtists.length === 0 && finalTracks.length > 0) {
                 const artistMap = new Map();
                 finalTracks.forEach((track) => {
@@ -4182,7 +4307,19 @@ export class UIRenderer {
     renderSearchHistory() {
         const historyEl = document.getElementById('search-history');
         if (!historyEl) return;
-        const history = JSON.parse(localStorage.getItem('search-history') || '[]');
+        const rawHistory = JSON.parse(localStorage.getItem('search-history') || '[]');
+        const history = rawHistory
+            .map((entry) => {
+                if (typeof entry === 'string') {
+                    return { query: entry, cover: null };
+                }
+                if (entry && typeof entry === 'object' && typeof entry.query === 'string') {
+                    return { query: entry.query, cover: entry.cover || null };
+                }
+                return null;
+            })
+            .filter(Boolean);
+
         if (history.length === 0) {
             historyEl.style.display = 'none';
             return;
@@ -4190,10 +4327,14 @@ export class UIRenderer {
         historyEl.innerHTML =
             history
                 .map(
-                    (query) => `
-            <div class="search-history-item" data-query="${escapeHtml(query)}">
-                ${SVG_CLOCK(16)}
-                <span class="query-text">${escapeHtml(query)}</span>
+                    (entry) => `
+            <div class="search-history-item" data-query="${escapeHtml(entry.query)}">
+                ${
+                    entry.cover
+                        ? this.getCoverHTML(entry.cover, escapeHtml(entry.query), 'search-history-thumb', 'eager')
+                        : `<img src="/icon.jpg" class="search-history-thumb" alt="${escapeHtml(entry.query)}" loading="eager">`
+                }
+                <span class="query-text">${escapeHtml(entry.query)}</span>
                 <span class="delete-history-btn" title="Remove from history">
                     ${SVG_CLOSE(14)}
                 </span>
@@ -4243,18 +4384,282 @@ export class UIRenderer {
 
     removeFromSearchHistory(query) {
         let history = JSON.parse(localStorage.getItem('search-history') || '[]');
-        history = history.filter((q) => q !== query);
+        history = history.filter((entry) => {
+            if (typeof entry === 'string') return entry !== query;
+            if (entry && typeof entry === 'object') return entry.query !== query;
+            return false;
+        });
         localStorage.setItem('search-history', JSON.stringify(history));
         this.renderSearchHistory();
     }
 
-    addToSearchHistory(query) {
+    addToSearchHistory(query, cover = null) {
         if (!query || query.trim().length === 0) return;
-        let history = JSON.parse(localStorage.getItem('search-history') || '[]');
-        history = history.filter((q) => q !== query);
-        history.unshift(query);
+        const normalizedQuery = query.trim();
+        const inferredCover =
+            cover ||
+            this.searchSuggestionCoverByQuery.get(normalizedQuery.toLowerCase()) ||
+            this.searchSuggestionCoverByQuery.get(normalizedQuery) ||
+            null;
+        let history = JSON.parse(localStorage.getItem('search-history') || '[]')
+            .map((entry) => {
+                if (typeof entry === 'string') return { query: entry, cover: null };
+                if (entry && typeof entry === 'object' && typeof entry.query === 'string') {
+                    return { query: entry.query, cover: entry.cover || null };
+                }
+                return null;
+            })
+            .filter(Boolean);
+
+        const existingEntry = history.find((entry) => entry.query === normalizedQuery);
+        const existingCover = existingEntry?.cover || null;
+
+        history = history.filter((entry) => entry.query !== normalizedQuery);
+        history.unshift({ query: normalizedQuery, cover: inferredCover || existingCover || null });
         history = history.slice(0, 10);
+
         localStorage.setItem('search-history', JSON.stringify(history));
+    }
+
+    normalizeSearchComparableText(value) {
+        return String(value || '')
+            .toLowerCase()
+            .normalize('NFKC')
+            .replace(/[^a-z0-9\u0900-\u097f]+/g, ' ')
+            .trim();
+    }
+
+    getCuratedTrendingSearchSeeds() {
+        if (this.curatedTrendingSearchSeedsCache) return this.curatedTrendingSearchSeedsCache;
+
+        this.curatedTrendingSearchSeedsCache = TOP_TRENDING_SEARCH_SEEDS.map(([title, artistList]) => {
+            const titleNorm = this.normalizeSearchComparableText(title);
+            const artistNorms = String(artistList || '')
+                .split(';')
+                .map((artist) => this.normalizeSearchComparableText(artist))
+                .filter(Boolean);
+            return {
+                title,
+                titleNorm,
+                artists: String(artistList || '')
+                    .split(';')
+                    .map((artist) => artist.trim())
+                    .filter(Boolean),
+                artistNorms,
+            };
+        });
+
+        return this.curatedTrendingSearchSeedsCache;
+    }
+
+    getMatchingCuratedTrendingSeeds(query) {
+        const normalizedQuery = this.normalizeSearchComparableText(query);
+        if (!normalizedQuery) return [];
+
+        return this.getCuratedTrendingSearchSeeds().filter((seed) => {
+            if (!seed.titleNorm) return false;
+            return (
+                seed.titleNorm === normalizedQuery ||
+                seed.titleNorm.includes(normalizedQuery) ||
+                normalizedQuery.includes(seed.titleNorm)
+            );
+        });
+    }
+
+    getTrackArtistNorms(track) {
+        return [track?.artist?.name, ...(Array.isArray(track?.artists) ? track.artists.map((artist) => artist?.name) : [])]
+            .map((name) => this.normalizeSearchComparableText(name))
+            .filter(Boolean);
+    }
+
+    doesTrackMatchCuratedSeed(track, seed) {
+        const trackTitleNorm = this.normalizeSearchComparableText(getTrackTitle(track) || track?.title || '');
+        if (!trackTitleNorm || !seed?.titleNorm) return false;
+
+        const titleMatch =
+            trackTitleNorm === seed.titleNorm ||
+            trackTitleNorm.includes(seed.titleNorm) ||
+            seed.titleNorm.includes(trackTitleNorm);
+
+        if (!titleMatch) return false;
+
+        const artistNorms = this.getTrackArtistNorms(track);
+        if (!seed.artistNorms.length) return true;
+
+        return artistNorms.some((artist) => seed.artistNorms.includes(artist));
+    }
+
+    prioritizeCuratedTopSearchTracks(query, tracks = []) {
+        if (!Array.isArray(tracks) || tracks.length <= 1) return tracks;
+
+        const normalizedQuery = this.normalizeSearchComparableText(query);
+        const matchingSeeds = this.getMatchingCuratedTrendingSeeds(normalizedQuery);
+        if (!matchingSeeds.length) return tracks;
+
+        return tracks
+            .map((track, index) => {
+                const trackTitleNorm = this.normalizeSearchComparableText(getTrackTitle(track) || track?.title || '');
+                let score = 0;
+
+                for (const seed of matchingSeeds) {
+                    if (this.doesTrackMatchCuratedSeed(track, seed)) {
+                        score += 1000;
+                        if (trackTitleNorm === seed.titleNorm) score += 300;
+                    }
+                }
+
+                if (trackTitleNorm === normalizedQuery) score += 200;
+                else if (trackTitleNorm.startsWith(normalizedQuery)) score += 120;
+                else if (trackTitleNorm.includes(normalizedQuery)) score += 80;
+
+                return { track, index, score };
+            })
+            .sort((a, b) => b.score - a.score || a.index - b.index)
+            .map((entry) => entry.track);
+    }
+
+    async ensureCuratedTopSearchTracks(query, tracks = [], signal) {
+        if (!Array.isArray(tracks)) return [];
+
+        const normalizedQuery = this.normalizeSearchComparableText(query);
+        const exactSeeds = this.getMatchingCuratedTrendingSeeds(normalizedQuery).filter(
+            (seed) => seed.titleNorm === normalizedQuery
+        );
+        if (!exactSeeds.length) return tracks;
+
+        const result = [...tracks];
+        const existingIds = new Set(result.map((track) => track?.id).filter(Boolean));
+
+        for (const seed of exactSeeds.slice(0, 3)) {
+            const alreadyPresent = result.some((track) => this.doesTrackMatchCuratedSeed(track, seed));
+            if (alreadyPresent) continue;
+
+            try {
+                const targetedQuery = `${seed.title} ${seed.artists[0] || ''}`.trim();
+                const targeted = await this.api.searchTracks(targetedQuery, { signal, limit: 20 });
+                if (signal?.aborted) return result;
+
+                const candidate = (targeted.items || []).find((track) => this.doesTrackMatchCuratedSeed(track, seed));
+                if (!candidate?.id || existingIds.has(candidate.id)) continue;
+
+                result.unshift(candidate);
+                existingIds.add(candidate.id);
+            } catch {
+                // Ignore targeted fetch failures and keep default results.
+            }
+        }
+
+        return result;
+    }
+
+    async renderSearchSuggestions(query) {
+        const historyEl = document.getElementById('search-history');
+        if (!historyEl) return;
+
+        const normalizedQuery = String(query || '').trim();
+        if (!normalizedQuery) {
+            this.renderSearchHistory();
+            return;
+        }
+
+        if (this.searchSuggestionAbortController) {
+            this.searchSuggestionAbortController.abort();
+        }
+        this.searchSuggestionAbortController = new AbortController();
+        const signal = this.searchSuggestionAbortController.signal;
+
+        historyEl.innerHTML = `
+            <div class="search-history-item search-suggestion-item search-suggestion-status" aria-disabled="true">
+                <span class="query-text">Suggesting songs...</span>
+            </div>
+        `;
+        historyEl.style.display = 'block';
+
+        try {
+            const results = await this.api.searchTracks(normalizedQuery, { signal });
+            if (signal.aborted) return;
+
+            const baseSuggestionPool = (results.items || []).filter((track) => track?.id && track?.title);
+            const suggestionPool = await this.ensureCuratedTopSearchTracks(normalizedQuery, baseSuggestionPool, signal);
+            if (signal.aborted) return;
+            const suggestions = this.prioritizeCuratedTopSearchTracks(normalizedQuery, suggestionPool).slice(0, 6);
+            this.searchSuggestionCoverByQuery.clear();
+            suggestions.forEach((track) => {
+                if (!track?.title) return;
+                const key = String(track.title).trim().toLowerCase();
+                if (!key || !track.album?.cover) return;
+                this.searchSuggestionCoverByQuery.set(key, track.album.cover);
+            });
+            if (suggestions.length > 0 && suggestions[0].album?.cover) {
+                this.searchSuggestionCoverByQuery.set(normalizedQuery.toLowerCase(), suggestions[0].album.cover);
+            }
+
+            if (suggestions.length === 0) {
+                historyEl.innerHTML = `
+                    <div class="search-history-item search-suggestion-item search-suggestion-status" aria-disabled="true">
+                        <span class="query-text">No song suggestions yet.</span>
+                    </div>
+                `;
+                historyEl.style.display = 'block';
+                return;
+            }
+
+            historyEl.innerHTML = suggestions
+                .map((track) => {
+                    const artistText = getTrackArtists(track) || 'Unknown Artist';
+                    const title = escapeHtml(track.title);
+                    const artist = escapeHtml(artistText);
+                    const titleRaw = escapeHtml(track.title);
+                    const cover = track.album?.cover || '';
+                    const trackId = escapeHtml(String(track.id));
+                    return `
+                        <div class="search-history-item search-suggestion-item" data-query="${titleRaw}" data-cover="${escapeHtml(String(cover))}" data-track-id="${trackId}">
+                            ${this.getCoverHTML(cover, titleRaw, 'search-history-thumb', 'eager')}
+                            <span class="query-text">
+                                <span class="suggestion-title">${title}</span>
+                                <span class="suggestion-subtext">${artist}</span>
+                            </span>
+                        </div>
+                    `;
+                })
+                .join('');
+
+            historyEl.style.display = 'block';
+
+            const suggestionById = new Map(suggestions.map((track) => [String(track.id), track]));
+            historyEl.querySelectorAll('.search-suggestion-item[data-query]').forEach((item) => {
+                item.addEventListener('click', () => {
+                    const selectedQuery = decodeHtml(item.dataset.query || '');
+                    const selectedCover = item.dataset.cover || null;
+                    const selectedTrackId = item.dataset.trackId || '';
+                    const selectedTrack = suggestionById.get(String(selectedTrackId));
+                    const searchInput = document.getElementById('search-input');
+                    if (!searchInput) return;
+
+                    searchInput.value = selectedQuery;
+                    this.addToSearchHistory(selectedQuery, selectedCover);
+
+                    if (selectedTrack?.type === 'video') {
+                        this.player.playVideo(selectedTrack);
+                    } else if (selectedTrack) {
+                        this.player.setQueue([selectedTrack], 0);
+                        this.player.playTrackFromQueue();
+                    } else {
+                        const searchForm = document.getElementById('search-form');
+                        if (searchForm?.requestSubmit) {
+                            searchForm.requestSubmit();
+                        } else {
+                            searchForm?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+                        }
+                    }
+
+                    historyEl.style.display = 'none';
+                });
+            });
+        } catch (error) {
+            if (error?.name === 'AbortError') return;
+            historyEl.style.display = 'none';
+        }
     }
 
     async renderAlbumPage(albumId, provider = null) {
@@ -6479,12 +6884,6 @@ export class UIRenderer {
     async renderTrackPage(trackId, provider = null) {
         await this.showPage('track');
 
-        document.body.classList.add('sidebar-collapsed');
-        const toggleBtn = document.getElementById('sidebar-toggle');
-        if (toggleBtn) {
-            toggleBtn.innerHTML = SVG_RIGHT_ARROW(20);
-        }
-
         const imageEl = document.getElementById('track-detail-image');
         const titleEl = document.getElementById('track-detail-title');
         const artistEl = document.getElementById('track-detail-artist');
@@ -6496,6 +6895,8 @@ export class UIRenderer {
 
         const playBtn = document.getElementById('play-track-btn');
         const likeBtn = document.getElementById('like-track-btn');
+        const badgesEl = document.getElementById('track-detail-badges');
+        const albumLinkEl = document.getElementById('track-detail-album-link');
 
         imageEl.src = '';
         imageEl.style.backgroundColor = 'var(--muted)';
@@ -6503,6 +6904,8 @@ export class UIRenderer {
         artistEl.innerHTML = '<div class="skeleton" style="height: 16px; width: 100px;"></div>';
         albumEl.innerHTML = '';
         yearEl.innerHTML = '';
+        if (badgesEl) badgesEl.innerHTML = '';
+        if (albumLinkEl) albumLinkEl.innerHTML = '';
         albumTracksContainer.innerHTML = this.createSkeletonTracks(5, false);
         albumSection.style.display = 'none';
         similarSection.style.display = 'none';
@@ -6607,8 +7010,19 @@ export class UIRenderer {
 
             artistEl.innerHTML = getTrackArtistsHTML(track);
 
+            if (badgesEl) {
+                const badges = [];
+                if (track.duration) badges.push(`<span class="track-detail-badge">${Math.floor(track.duration / 60)}:${String(track.duration % 60).padStart(2, '0')}</span>`);
+                if (track.explicit) badges.push('<span class="track-detail-badge">Explicit</span>');
+                if (track.audioQuality) badges.push(`<span class="track-detail-badge">${escapeHtml(String(track.audioQuality))}</span>`);
+                badgesEl.innerHTML = badges.join('');
+            }
+
             if (track.album) {
                 albumEl.innerHTML = `<a href="/album/${track.album.id}">${escapeHtml(track.album.title)}</a>`;
+                if (albumLinkEl) {
+                    albumLinkEl.innerHTML = `<a class="track-detail-album-chip" href="/album/${track.album.id}">View album</a>`;
+                }
             }
 
             if (track.album?.releaseDate) {

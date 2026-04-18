@@ -57,7 +57,6 @@ import {
     SVG_RESET,
 } from './icons.js';
 import { HiFiClient } from './HiFi.js';
-import { mountFlipClock } from './components/blocks/flip-clock.js';
 
 // Capture real iOS state before spoofing (needed for background audio)
 if (typeof window !== 'undefined') {
@@ -380,7 +379,6 @@ function initializeMiniPlayer(player, lyricsManager) {
     const nowPlayingProgressFillEl = document.getElementById('progress-fill');
     const prevMainBtn = document.getElementById('prev-btn');
     const nextMainBtn = document.getElementById('next-btn');
-    const MINI_PLAYER_ICON_HTML = '<use svg="!lucide/picture-in-picture-2.svg" size="20" />';
     const FULLSCREEN_ICON_HTML =
         '<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 3H3v5"/><path d="M16 3h5v5"/><path d="M3 16v5h5"/><path d="M21 16v5h-5"/></svg>';
     const isMobileViewport = () => window.matchMedia('(max-width: 768px)').matches;
@@ -500,18 +498,10 @@ function initializeMiniPlayer(player, lyricsManager) {
         typeof window.documentPictureInPicture?.requestWindow === 'function';
 
     const setToggleState = (open) => {
-        if (isMobileViewport()) {
-            toggleBtn.innerHTML = FULLSCREEN_ICON_HTML;
-            toggleBtn.classList.remove('active');
-            toggleBtn.title = 'Fullscreen';
-            toggleBtn.setAttribute('aria-label', 'Fullscreen');
-            return;
-        }
-
-        toggleBtn.innerHTML = MINI_PLAYER_ICON_HTML;
+        toggleBtn.innerHTML = FULLSCREEN_ICON_HTML;
         toggleBtn.classList.toggle('active', open);
-        toggleBtn.title = open ? 'Close Mini Player' : 'Mini Player';
-        toggleBtn.setAttribute('aria-label', open ? 'Close Mini Player' : 'Mini Player');
+        toggleBtn.title = open ? 'Close Fullscreen' : 'Fullscreen';
+        toggleBtn.setAttribute('aria-label', open ? 'Close Fullscreen' : 'Fullscreen');
     };
 
     const setOpen = (open) => {
@@ -719,34 +709,26 @@ function initializeMiniPlayer(player, lyricsManager) {
     toggleBtn.addEventListener('click', (e) => {
         e.stopPropagation();
 
-        if (isMobileViewport()) {
-            if (!player.currentTrack) {
-                showNotification('Play a song first to open fullscreen.');
-                return;
-            }
-
-            const overlay = document.getElementById('fullscreen-cover-overlay');
-            const isFullscreenOpen = overlay && getComputedStyle(overlay).display !== 'none';
-
-            if (isFullscreenOpen) {
-                closeFullscreenOverlay().catch(console.error);
-                return;
-            }
-
-            const nextTrack = player.getNextTrack();
-            UIRenderer.instance?.showFullscreenCover(player.currentTrack, nextTrack, lyricsManager, player.activeElement);
+        if (!player.currentTrack) {
+            showNotification('Play a song first to open fullscreen.');
             return;
         }
 
-        if (canUseDocumentPiP) {
-            openPipWindow().catch((error) => {
-                console.warn('Document Picture-in-Picture unavailable, falling back to in-page mini player:', error);
-                setOpen(!miniPlayer.classList.contains('active'));
-            });
+        const overlay = document.getElementById('fullscreen-cover-overlay');
+        const isFullscreenOpen = overlay && getComputedStyle(overlay).display !== 'none';
+
+        if (isFullscreenOpen) {
+            closeFullscreenOverlay().catch(console.error);
             return;
         }
 
-        setOpen(!miniPlayer.classList.contains('active'));
+        if (!isMobileViewport()) {
+            closePipWindow();
+            setOpen(false);
+        }
+
+        const nextTrack = player.getNextTrack();
+        UIRenderer.instance?.showFullscreenCover(player.currentTrack, nextTrack, lyricsManager, player.activeElement);
     });
 
     likeBtn.addEventListener('click', () => nowPlayingLikeBtn?.click());
@@ -3013,12 +2995,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    const debouncedSearch = debounce((query) => {
-        if (query && query === searchInput.value.trim()) {
-            performSearch(query);
-        }
-    }, 3000);
-
     const handleExternalLink = (query) => {
         const isExternalLink =
             query.includes('monochrome.tf/') ||
@@ -3046,13 +3022,16 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     searchInput.addEventListener('input', (e) => {
         const query = e.target.value.trim();
-        if (!query) return;
+        if (!query) {
+            UIRenderer.instance.renderSearchHistory();
+            return;
+        }
 
         if (handleExternalLink(query)) {
             return;
         }
 
-        debouncedSearch(query);
+        UIRenderer.instance.renderSearchSuggestions(query).catch(console.error);
     });
 
     searchInput.addEventListener('change', (e) => {
@@ -3063,10 +3042,20 @@ document.addEventListener('DOMContentLoaded', async () => {
     });
 
     searchInput.addEventListener('focus', () => {
+        const query = searchInput.value.trim();
+        if (query) {
+            UIRenderer.instance.renderSearchSuggestions(query).catch(console.error);
+            return;
+        }
         UIRenderer.instance.renderSearchHistory();
     });
 
     searchInput.addEventListener('click', () => {
+        const query = searchInput.value.trim();
+        if (query) {
+            UIRenderer.instance.renderSearchSuggestions(query).catch(console.error);
+            return;
+        }
         UIRenderer.instance.renderSearchHistory();
     });
 
@@ -3093,56 +3082,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             closeMobileSearch();
         }
     });
-
-    const premiumFlipClockRoot = document.getElementById('premium-flip-clock-root');
-    if (premiumFlipClockRoot) {
-        mountFlipClock(premiumFlipClockRoot, { size: 'md', endDate: '2026-06-20T23:59:59' });
-    }
-
-    const premiumRevealTargets = Array.from(document.querySelectorAll('#page-premium .premium-hero, #page-premium .premium-section'));
-    if (premiumRevealTargets.length) {
-        premiumRevealTargets.forEach((el, index) => {
-            el.classList.add('premium-reveal');
-            el.style.setProperty('--premium-reveal-delay', `${index * 70}ms`);
-        });
-
-        if ('IntersectionObserver' in window) {
-            const revealObserver = new IntersectionObserver(
-                (entries, observer) => {
-                    for (const entry of entries) {
-                        if (entry.isIntersecting) {
-                            entry.target.classList.add('is-visible');
-                            observer.unobserve(entry.target);
-                        }
-                    }
-                },
-                {
-                    root: null,
-                    threshold: 0.14,
-                    rootMargin: '0px 0px -8% 0px',
-                }
-            );
-
-            premiumRevealTargets.forEach((el) => revealObserver.observe(el));
-        } else {
-            premiumRevealTargets.forEach((el) => el.classList.add('is-visible'));
-        }
-    }
-
-    const premiumPersonalizedNote = document.getElementById('premium-personalized-note');
-    if (premiumPersonalizedNote) {
-        if (authManager?.user?.email) {
-            const localPart = authManager.user.email.split('@')[0];
-            premiumPersonalizedNote.textContent = `${localPart}, Premium can be tuned around your listening style and sync habits.`;
-        } else {
-            premiumPersonalizedNote.textContent = 'Sign in to see personalized upgrade recommendations based on your usage.';
-        }
-    }
-
-    const founderNote = document.getElementById('premium-founder-note');
-    if (founderNote) {
-        founderNote.textContent = 'Early members keep launch pricing forever once Premium goes live.';
-    }
 
     window.addEventListener('online', () => {
         hideOfflineNotification();

@@ -7,24 +7,19 @@ export async function onRequest(context) {
         <html lang="en">
         <head>
             <meta charset="UTF-8">
-            <title>audivo.in | Premium</title>
-            <meta name="description" content="A minimalist music streaming application">
+            <title>audivo.in | Premium Support</title>
+            <meta name="description" content="Support audivo.in while keeping the full experience free for everyone.">
             <meta name="theme-color" content="#000000">
-
             <meta property="og:site_name" content="audivo">
-            <meta property="og:title" content="audivo.in | Premium">
-            <meta property="og:description" content="A minimalist music streaming application">
+            <meta property="og:title" content="audivo.in | Premium Support">
+            <meta property="og:description" content="Support audivo.in while keeping the full experience free for everyone.">
             <meta property="og:type" content="website">
             <meta property="og:url" content="${pageUrl}">
-
             <meta name="twitter:card" content="summary">
-            <meta name="twitter:title" content="audivo.in | Premium">
-            <meta name="twitter:description" content="A minimalist music streaming application">
+            <meta name="twitter:title" content="audivo.in | Premium Support">
+            <meta name="twitter:description" content="Support audivo.in while keeping the full experience free for everyone.">
         </head>
-        <body>
-            <h1>audivo.in | Premium</h1>
-            <p>A minimalist music streaming application</p>
-        </body>
+        <body></body>
         </html>
     `;
 

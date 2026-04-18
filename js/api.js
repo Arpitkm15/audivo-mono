@@ -2,7 +2,6 @@
 import {
     RATE_LIMIT_ERROR_MESSAGE,
     deriveTrackQuality,
-    delay,
     isTrackUnavailable,
     getExtensionFromBlob,
     getTrackDiscNumber,
@@ -72,6 +71,7 @@ export class LosslessAPI {
             ttl: 1000 * 60 * 30,
         });
         this.streamCache = new Map();
+        this.instanceCooldownUntil = new Map();
 
         setInterval(
             async () => {
@@ -88,6 +88,43 @@ export class LosslessAPI {
             const toDelete = entries.slice(0, entries.length - 50);
             toDelete.forEach(([key]) => this.streamCache.delete(key));
         }
+    }
+
+    getInstanceBaseUrl(instance) {
+        return typeof instance === 'string' ? instance : instance.url;
+    }
+
+    getRetryAfterMs(response) {
+        const raw = response?.headers?.get('retry-after');
+        if (!raw) return null;
+
+        const seconds = Number(raw);
+        if (Number.isFinite(seconds) && seconds > 0) {
+            return Math.max(1000, Math.round(seconds * 1000));
+        }
+
+        const parsedDate = Date.parse(raw);
+        if (!Number.isNaN(parsedDate)) {
+            const diff = parsedDate - Date.now();
+            if (diff > 0) return diff;
+        }
+
+        return null;
+    }
+
+    markInstanceCooldown(baseUrl, cooldownMs = 15000) {
+        const until = Date.now() + Math.max(1000, cooldownMs);
+        this.instanceCooldownUntil.set(baseUrl, until);
+    }
+
+    isInstanceInCooldown(baseUrl, now = Date.now()) {
+        const until = this.instanceCooldownUntil.get(baseUrl);
+        if (!until) return false;
+        if (until <= now) {
+            this.instanceCooldownUntil.delete(baseUrl);
+            return false;
+        }
+        return true;
     }
 
     async fetchWithRetry(relativePath, options = {}) {
@@ -143,22 +180,29 @@ export class LosslessAPI {
             }
         }
 
-        const maxTotalAttempts = instances.length * 2; // Allow some retries across instances
+        const now = Date.now();
+        const cooledInstances = instances.filter(
+            (instance) => !this.isInstanceInCooldown(this.getInstanceBaseUrl(instance), now)
+        );
+        const attemptInstances = cooledInstances.length > 0 ? cooledInstances : instances;
+
+        const maxTotalAttempts = attemptInstances.length;
         let lastError = null;
-        let instanceIndex = Math.floor(Math.random() * instances.length);
+        let instanceIndex = Math.floor(Math.random() * attemptInstances.length);
 
         for (let attempt = 1; attempt <= maxTotalAttempts; attempt++) {
-            const instance = instances[instanceIndex % instances.length];
-            const baseUrl = typeof instance === 'string' ? instance : instance.url;
+            const instance = attemptInstances[instanceIndex % attemptInstances.length];
+            const baseUrl = this.getInstanceBaseUrl(instance);
             const url = baseUrl.endsWith('/') ? `${baseUrl}${relativePath.substring(1)}` : `${baseUrl}${relativePath}`;
 
             try {
                 const response = await fetch(url, { signal: options.signal });
 
                 if (response.status === 429) {
+                    const retryAfterMs = this.getRetryAfterMs(response) || 15000;
+                    this.markInstanceCooldown(baseUrl, retryAfterMs);
                     console.warn(`Rate limit hit on ${baseUrl}. Trying next instance...`);
                     instanceIndex++;
-                    await delay(500); // Small delay before trying next instance
                     continue;
                 }
 
@@ -176,6 +220,7 @@ export class LosslessAPI {
                 }
 
                 if (response.status >= 500) {
+                    this.markInstanceCooldown(baseUrl, 5000);
                     console.warn(`Server error ${response.status} on ${baseUrl}. Trying next instance...`);
                     instanceIndex++;
                     continue;
@@ -186,9 +231,9 @@ export class LosslessAPI {
             } catch (error) {
                 if (error.name === 'AbortError') throw error;
                 lastError = error;
+                this.markInstanceCooldown(baseUrl, 3000);
                 console.warn(`Network error on ${baseUrl}: ${error.message}. Trying next instance...`);
                 instanceIndex++;
-                await delay(200);
             }
         }
 
@@ -550,7 +595,7 @@ export class LosslessAPI {
             const results = {
                 tracks: {
                     ...tracksData,
-                    items: this.prioritizeHindiItems(tracksData.items.map((t) => this.prepareTrack(t))),
+                    items: tracksData.items.map((t) => this.prepareTrack(t)),
                 },
                 artists: {
                     ...artistsData,
@@ -568,7 +613,7 @@ export class LosslessAPI {
                     : { items: [], limit: 0, offset: 0, totalNumberOfItems: 0 },
                 videos: {
                     ...videosData,
-                    items: this.prioritizeHindiItems(videosData.items.map((v) => this.prepareTrack(v))),
+                    items: videosData.items.map((v) => this.prepareTrack(v)),
                 },
             };
 
@@ -603,7 +648,7 @@ export class LosslessAPI {
             const response = await this.fetchWithRetry(`/search/?s=${encodeURIComponent(query)}`, options);
             const data = await response.json();
             const normalized = this.normalizeSearchResponse(data, 'tracks');
-            const preparedTracks = this.prioritizeHindiItems(normalized.items.map((t) => this.prepareTrack(t)));
+            const preparedTracks = normalized.items.map((t) => this.prepareTrack(t));
             // Skip enrichment for search to be fast and lightweight
             // const enrichedTracks = await this.enrichTracksWithAlbumDates(preparedTracks);
             const result = {
@@ -707,7 +752,7 @@ export class LosslessAPI {
             const normalized = this.normalizeSearchResponse(data, 'videos');
             const result = {
                 ...normalized,
-                items: this.prioritizeHindiItems(normalized.items.map((v) => this.prepareVideo(v))),
+                items: normalized.items.map((v) => this.prepareVideo(v)),
             };
 
             if (!(response instanceof TidalResponse)) {

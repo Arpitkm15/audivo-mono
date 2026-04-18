@@ -4,8 +4,8 @@ import { SVG_RIGHT_ARROW } from './icons';
 
 export const apiSettings = {
     STORAGE_KEY: 'monochrome-api-instances-v9',
-    BLOCKED_INSTANCE_HOSTS: ['tidal-api.binimum.org'],
-    PREFERRED_INSTANCE_URL: 'https://audivomusic.vercel.app/api',
+    BLOCKED_INSTANCE_HOSTS: ['tidal-api.binimum.org', 'audivomusic.vercel.app'],
+    PREFERRED_INSTANCE_URL: '',
     INSTANCES_URLS: [
         'https://tidal-uptime.jiffy-puffs-1j.workers.dev/',
         'https://tidal-uptime.props-76styles.workers.dev/',

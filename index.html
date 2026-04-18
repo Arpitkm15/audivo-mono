@@ -1663,6 +1663,12 @@
                                     <use svg="!lucide/settings.svg" size="24" />
                                     <span>Settings</span>
                                 </a>
+                                <div class="sidebar-playback-notice" aria-live="polite">
+                                    <span class="sidebar-playback-notice-label">Notice</span>
+                                    <span class="sidebar-playback-notice-text">
+                                        Playback might be slightly delayed at the moment, things will be back to normal shortly.
+                                    </span>
+                                </div>
                             </li>
                         </ul>
                     </nav>
@@ -1822,93 +1828,130 @@
                                 </div>
                                 <div class="section-header-row">
                                     <h2 class="section-title">Trending Songs</h2>
-                                    <button
-                                        class="btn-secondary"
-                                        id="refresh-trending-songs-btn"
-                                        title="Refresh"
-                                        style="padding: 4px 8px"
-                                    >
-                                        <use svg="!lucide/rotate-cw.svg" size="16" />
-                                    </button>
+                                    <div class="home-section-actions">
+                                        <button
+                                            class="btn-secondary"
+                                            id="prev-trending-songs-btn"
+                                            title="Previous"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-left.svg" size="16" />
+                                        </button>
+                                        <button
+                                            class="btn-secondary"
+                                            id="next-trending-songs-btn"
+                                            title="Next"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-right.svg" size="16" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="track-list" id="home-trending-songs"></div>
+                                <div class="card-grid home-song-rail" id="home-trending-songs"></div>
                             </section>
-                            <section class="content-section">
-                                <div
-                                    style="
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: space-between;
-                                        margin-bottom: 1rem;
-                                    "
-                                >
-                                    <h2 class="section-title" style="margin-bottom: 0">Popular Artists</h2>
-                                    <button
-                                        class="btn-secondary"
-                                        id="refresh-artists-btn"
-                                        title="Refresh"
-                                        style="padding: 4px 8px"
-                                    >
-                                        <use svg="!lucide/rotate-cw.svg" size="16" />
-                                    </button>
+                            <section class="content-section home-popular-artists-section">
+                                <div class="section-header-row">
+                                    <h2 class="section-title">Popular Artists</h2>
+                                    <div class="home-section-actions">
+                                        <button
+                                            class="btn-secondary"
+                                            id="prev-artists-btn"
+                                            title="Previous"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-left.svg" size="16" />
+                                        </button>
+                                        <button
+                                            class="btn-secondary"
+                                            id="next-artists-btn"
+                                            title="Next"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-right.svg" size="16" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="card-grid" id="home-recommended-artists"></div>
+                                <div class="card-grid home-song-rail home-popular-artists-grid" id="home-recommended-artists"></div>
                             </section>
                             <section class="content-section">
                                 <div class="section-header-row">
                                     <h2 class="section-title">Recommended Songs</h2>
-                                    <button
-                                        class="btn-secondary"
-                                        id="refresh-songs-btn"
-                                        title="Refresh"
-                                        style="padding: 4px 8px"
-                                    >
-                                        <use svg="!lucide/rotate-cw.svg" size="16" />
-                                    </button>
+                                    <div class="home-section-actions">
+                                        <button
+                                            class="btn-secondary"
+                                            id="prev-songs-btn"
+                                            title="Previous"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-left.svg" size="16" />
+                                        </button>
+                                        <button
+                                            class="btn-secondary"
+                                            id="next-songs-btn"
+                                            title="Next"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-right.svg" size="16" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="track-list" id="home-recommended-songs"></div>
+                                <div class="card-grid home-song-rail" id="home-recommended-songs"></div>
                             </section>
                             <section class="content-section">
-                                <div
-                                    style="
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: space-between;
-                                        margin-bottom: 1rem;
-                                    "
-                                >
-                                    <h2 class="section-title" style="margin-bottom: 0">Recommended Albums</h2>
-                                    <button
-                                        class="btn-secondary"
-                                        id="refresh-albums-btn"
-                                        title="Refresh"
-                                        style="padding: 4px 8px"
-                                    >
-                                        <use svg="!lucide/rotate-cw.svg" size="16" />
-                                    </button>
+                                <div class="section-header-row">
+                                    <h2 class="section-title">Recommended Albums</h2>
+                                    <div class="home-section-actions">
+                                        <button
+                                            class="btn-secondary"
+                                            id="prev-albums-btn"
+                                            title="Previous"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-left.svg" size="16" />
+                                        </button>
+                                        <button
+                                            class="btn-secondary"
+                                            id="next-albums-btn"
+                                            title="Next"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-right.svg" size="16" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="card-grid" id="home-recommended-albums"></div>
+                                <div class="card-grid home-song-rail" id="home-recommended-albums"></div>
                             </section>
                             <section class="content-section">
-                                <div
-                                    style="
-                                        display: flex;
-                                        align-items: center;
-                                        justify-content: space-between;
-                                        margin-bottom: 1rem;
-                                    "
-                                >
-                                    <h2 class="section-title" style="margin-bottom: 0">Jump Back In</h2>
-                                    <button
-                                        class="btn-secondary"
-                                        id="clear-recent-btn"
-                                        title="Clear History"
-                                        style="padding: 4px 8px"
-                                    >
-                                        <use svg="!lucide/trash.svg" size="16" />
-                                    </button>
+                                <div class="section-header-row">
+                                    <h2 class="section-title">Jump Back In</h2>
+                                    <div class="home-section-actions">
+                                        <button
+                                            class="btn-secondary"
+                                            id="prev-recent-btn"
+                                            title="Previous"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-left.svg" size="16" />
+                                        </button>
+                                        <button
+                                            class="btn-secondary"
+                                            id="next-recent-btn"
+                                            title="Next"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/arrow-right.svg" size="16" />
+                                        </button>
+                                        <button
+                                            class="btn-secondary"
+                                            id="clear-recent-btn"
+                                            title="Clear History"
+                                            style="padding: 4px 8px"
+                                        >
+                                            <use svg="!lucide/trash.svg" size="16" />
+                                        </button>
+                                    </div>
                                 </div>
-                                <div class="card-grid" id="home-recent-mixed"></div>
+                                <div class="card-grid home-song-rail" id="home-recent-mixed"></div>
                             </section>
                             <section class="content-section" id="home-editors-picks-section">
                                 <div
@@ -2765,10 +2808,14 @@
                         <div class="detail-header-info">
                             <div class="type">Song</div>
                             <h1 class="title" id="track-detail-title"></h1>
-                            <div class="meta">
-                                <span id="track-detail-artist"></span> • <span id="track-detail-album"></span> •
+                            <div class="meta track-detail-meta">
+                                <span id="track-detail-artist"></span>
+                                <span class="track-detail-dot">•</span>
+                                <span id="track-detail-album"></span>
+                                <span class="track-detail-dot">•</span>
                                 <span id="track-detail-year"></span>
                             </div>
+                            <div class="track-detail-badges" id="track-detail-badges"></div>
                             <div class="detail-header-actions">
                                 <button id="play-track-btn" class="btn-primary" title="Play">
                                     <use svg="./images/play.svg" size="20" />
@@ -2797,14 +2844,19 @@
                                     <span>Download</span>
                                 </button>
                             </div>
+                            <div class="track-detail-album-link" id="track-detail-album-link"></div>
                         </div>
                     </header>
-                    <section class="content-section" id="track-album-section">
-                        <h2 class="section-title">More from Album</h2>
+                    <section class="content-section spotify-track-panel" id="track-album-section">
+                        <div class="section-header-row">
+                            <h2 class="section-title">More from Album</h2>
+                        </div>
                         <div class="track-list" id="track-detail-album-tracks"></div>
                     </section>
-                    <section class="content-section" id="track-similar-section" style="display: none">
-                        <h2 class="section-title">Similar Tracks</h2>
+                    <section class="content-section spotify-track-panel" id="track-similar-section" style="display: none">
+                        <div class="section-header-row">
+                            <h2 class="section-title">Similar Tracks</h2>
+                        </div>
                         <div class="track-list" id="track-detail-similar-tracks"></div>
                     </section>
                 </div>
@@ -5616,106 +5668,122 @@
                 </div>
 
                 <div id="page-premium" class="page">
-                    <section class="premium-coming-soon">
-                        <div class="premium-glow premium-glow-one"></div>
-                        <div class="premium-glow premium-glow-two"></div>
+                    <section class="premium-support-shell">
+                        <div class="premium-support-glow premium-support-glow-one"></div>
+                        <div class="premium-support-glow premium-support-glow-two"></div>
 
-                        <div class="premium-card">
-                            <header class="premium-hero">
-                                <div class="premium-badge">
-                                    <use svg="!lucide/rocket.svg" size="14" />
-                                    <span>Premium Preview</span>
+                        <div class="premium-support-card premium-support-hero">
+                            <div class="premium-support-badge">
+                                <use svg="!lucide/heart-handshake.svg" size="14" />
+                                <span>Support Audivo</span>
+                            </div>
+
+                            <h1 class="premium-support-title">Everything here stays free. Donations keep it alive.</h1>
+                            <p class="premium-support-subtitle">
+                                AUDIVO is built to stay open and accessible. You can use the full experience for free,
+                                and if you value the project, a donation helps cover servers, domains, maintenance, and
+                                future development.
+                            </p>
+
+                            <div class="premium-support-hero-actions">
+                                <a
+                                    href="https://www.audivo.in"
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="btn-primary premium-support-primary-action"
+                                    >Donate Now</a
+                                >
+                            </div>
+                        </div>
+
+                        <div class="premium-support-grid">
+                            <section class="premium-support-card premium-support-free-card">
+                                <div class="premium-support-section-head">
+                                    <h2>What you get for free</h2>
+                                    <p>No paywall. No trial. No hidden upgrade lock.</p>
                                 </div>
 
-                                <h1 class="premium-title">Turn audivo.in into your personal listening studio</h1>
-                                <p class="premium-subtitle">
-                                    Premium adds deeper quality controls, faster syncing, powerful smart tools, and
-                                    early feature access for power listeners.
-                                </p>
-
-                                <p class="premium-personalized-note" id="premium-personalized-note">
-                                    Crafted for serious listeners who want more control.
-                                </p>
-
-                                <div id="premium-flip-clock-root"></div>
-
-                                <div class="premium-mini-stats">
-                                    <div class="premium-mini-stat">
-                                        <span class="premium-mini-stat-value">24-bit</span>
-                                        <span class="premium-mini-stat-label">Hi-Res Streams</span>
-                                    </div>
-                                    <div class="premium-mini-stat">
-                                        <span class="premium-mini-stat-value">3x</span>
-                                        <span class="premium-mini-stat-label">Faster Sync</span>
-                                    </div>
-                                    <div class="premium-mini-stat">
-                                        <span class="premium-mini-stat-value">0 Ads</span>
-                                        <span class="premium-mini-stat-label">Distraction-Free</span>
-                                    </div>
-                                </div>
-                            </header>
-
-                            <section class="premium-founder-strip">
-                                <use svg="!lucide/badge-percent.svg" size="18" />
-                                <div>
-                                    <strong>Founding Listener Pricing</strong>
-                                    <p id="premium-founder-note">
-                                        Early members keep launch pricing forever once Premium goes live.
-                                    </p>
-                                </div>
-                            </section>
-
-                            <section class="premium-section">
-                                <div class="premium-section-head">
-                                    <h2>Everything You Unlock</h2>
-                                    <p>Designed for listeners who want quality, control, and speed.</p>
-                                </div>
-                                <div class="premium-feature-grid">
-                                    <article class="premium-feature-item">
-                                        <use svg="!lucide/audio-lines.svg" size="18" />
+                                <div class="premium-support-feature-list">
+                                    <article class="premium-support-feature">
+                                        <use svg="!lucide/play-circle.svg" size="18" />
                                         <div>
-                                            <h3>Hi-Fi Plus</h3>
-                                            <p>Higher-bitrate and advanced audio processing profiles.</p>
+                                            <h3>Music playback</h3>
+                                            <p>Stream and listen with the full playback experience available to everyone.</p>
                                         </div>
                                     </article>
-                                    <article class="premium-feature-item">
-                                        <use svg="!lucide/cloud.svg" size="18" />
+                                    <article class="premium-support-feature">
+                                        <use svg="!lucide/library-big.svg" size="18" />
                                         <div>
-                                            <h3>Cloud Priority</h3>
-                                            <p>Faster library sync and lower queue latency across devices.</p>
+                                            <h3>Library tools</h3>
+                                            <p>Browse your music, manage collections, and keep everything organized.</p>
                                         </div>
                                     </article>
-                                    <article class="premium-feature-item">
-                                        <use svg="!lucide/sparkles.svg" size="18" />
+                                    <article class="premium-support-feature">
+                                        <use svg="!lucide/search.svg" size="18" />
                                         <div>
-                                            <h3>Labs Access</h3>
-                                            <p>Try experimental features and smart recommendation tools first.</p>
+                                            <h3>Discovery and search</h3>
+                                            <p>Find tracks, albums, artists, playlists, and more without restrictions.</p>
                                         </div>
                                     </article>
-                                    <article class="premium-feature-item">
-                                        <use svg="!lucide/list-video.svg" size="18" />
+                                    <article class="premium-support-feature">
+                                        <use svg="!lucide/settings-2.svg" size="18" />
                                         <div>
-                                            <h3>Smart Playlists</h3>
-                                            <p>Auto playlists based on mood, era, language, and audio profile.</p>
+                                            <h3>Personal settings</h3>
+                                            <p>Tune the experience to your preferences with the built-in settings panel.</p>
                                         </div>
                                     </article>
-                                    <article class="premium-feature-item">
+                                    <article class="premium-support-feature">
                                         <use svg="!lucide/download.svg" size="18" />
                                         <div>
-                                            <h3>Download Boost</h3>
-                                            <p>Better batch download handling with resume and richer metadata.</p>
+                                            <h3>Downloads and sync</h3>
+                                            <p>Offline-friendly features and sync support remain part of the free app.</p>
                                         </div>
                                     </article>
-                                    <article class="premium-feature-item">
+                                    <article class="premium-support-feature">
                                         <use svg="!lucide/shield-check.svg" size="18" />
                                         <div>
-                                            <h3>Privacy Controls</h3>
-                                            <p>More fine-grained visibility and profile sharing options.</p>
+                                            <h3>Privacy-first design</h3>
+                                            <p>Your listening stays lightweight, minimal, and focused on the music.</p>
                                         </div>
                                     </article>
                                 </div>
                             </section>
 
+                            <aside class="premium-support-card premium-support-donate-card">
+                                <div class="premium-support-section-head">
+                                    <h2>Why donate?</h2>
+                                    <p>Small monthly support keeps the lights on and the project improving.</p>
+                                </div>
+
+                                <div class="premium-support-summary">
+                                    <div class="premium-support-summary-item">
+                                        <span class="premium-support-summary-value">Servers</span>
+                                        <span class="premium-support-summary-label">Bandwidth, uptime, and hosting</span>
+                                    </div>
+                                    <div class="premium-support-summary-item">
+                                        <span class="premium-support-summary-value">Domain</span>
+                                        <span class="premium-support-summary-label">Keeping audivo.in online</span>
+                                    </div>
+                                    <div class="premium-support-summary-item">
+                                        <span class="premium-support-summary-value">Updates</span>
+                                        <span class="premium-support-summary-label">New features and maintenance</span>
+                                    </div>
+                                </div>
+
+                                <p class="premium-support-note">
+                                    If you cannot donate, sharing the project still helps a lot.
+                                </p>
+
+                                <div class="premium-support-cta-stack">
+                                    <a
+                                        href="https://ko-fi.com/monochromemusic"
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        class="btn-primary premium-support-primary-action"
+                                        >Donate Now</a
+                                    >
+                                </div>
+                            </aside>
                         </div>
                     </section>
                 </div>
@@ -5922,6 +5990,11 @@
                         </div>
                     </div>
                 </div>
+
+                <div class="app-page-credits" aria-label="Credits">
+                    <p>Made with &#10084;&#65039;</p>
+                    <p>&copy; 2026 Audivo. All rights reserved.</p>
+                </div>
             </main>
 
             <footer class="now-playing-bar">
@@ -5986,8 +6059,8 @@
                         <button id="queue-btn" title="Queue">
                             <use svg="!lucide/list.svg" size="24" />
                         </button>
-                        <button id="mini-player-toggle-btn" title="Mini Player" aria-label="Mini Player">
-                            <use svg="!lucide/picture-in-picture-2.svg" size="20" />
+                        <button id="mini-player-toggle-btn" title="Fullscreen" aria-label="Fullscreen">
+                            <use svg="!lucide/maximize.svg" size="20" />
                         </button>
                     </div>
                     <div class="volume-slider-row desktop-only">
