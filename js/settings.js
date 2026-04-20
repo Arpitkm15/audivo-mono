@@ -178,18 +178,27 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const lastfmPasswordInput = document.getElementById('lastfm-password');
     const lastfmLoginCredentialsBtn = document.getElementById('lastfm-login-credentials');
     const lastfmUseOAuthBtn = document.getElementById('lastfm-use-oauth');
+    const hasLastFmUi =
+        !!lastfmConnectBtn &&
+        !!lastfmStatus &&
+        !!lastfmToggleSetting &&
+        !!lastfmLoveSetting &&
+        !!lastfmCustomCredsToggleSetting &&
+        !!lastfmCustomCredsSetting;
 
     function updateLastFMUI() {
+        if (!hasLastFmUi) return;
+
         if (scrobbler.lastfm.isAuthenticated()) {
             lastfmStatus.textContent = `Connected as ${scrobbler.lastfm.username}`;
             lastfmConnectBtn.textContent = 'Disconnect';
             lastfmConnectBtn.classList.add('danger');
             lastfmToggleSetting.style.display = 'flex';
             lastfmLoveSetting.style.display = 'flex';
-            lastfmToggle.checked = lastFMStorage.isEnabled();
-            lastfmLoveToggle.checked = lastFMStorage.shouldLoveOnLike();
+            if (lastfmToggle) lastfmToggle.checked = lastFMStorage.isEnabled();
+            if (lastfmLoveToggle) lastfmLoveToggle.checked = lastFMStorage.shouldLoveOnLike();
             lastfmCustomCredsToggleSetting.style.display = 'flex';
-            lastfmCustomCredsToggle.checked = lastFMStorage.useCustomCredentials();
+            if (lastfmCustomCredsToggle) lastfmCustomCredsToggle.checked = lastFMStorage.useCustomCredentials();
             updateCustomCredsUI();
             hideCredentialAuth();
         } else {
@@ -220,15 +229,17 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     }
 
     function updateCustomCredsUI() {
+        if (!lastfmCustomCredsSetting) return;
+
         const useCustom = lastFMStorage.useCustomCredentials();
         lastfmCustomCredsSetting.style.display = useCustom ? 'flex' : 'none';
 
         if (useCustom) {
-            lastfmCustomApiKey.value = lastFMStorage.getCustomApiKey();
-            lastfmCustomApiSecret.value = lastFMStorage.getCustomApiSecret();
+            if (lastfmCustomApiKey) lastfmCustomApiKey.value = lastFMStorage.getCustomApiKey();
+            if (lastfmCustomApiSecret) lastfmCustomApiSecret.value = lastFMStorage.getCustomApiSecret();
 
             const hasCreds = lastFMStorage.getCustomApiKey() && lastFMStorage.getCustomApiSecret();
-            lastfmClearCustomCreds.style.display = hasCreds ? 'inline-block' : 'none';
+            if (lastfmClearCustomCreds) lastfmClearCustomCreds.style.display = hasCreds ? 'inline-block' : 'none';
         }
     }
 
@@ -289,7 +300,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                         clearInterval(checkAuth);
                         if (authWindow && !authWindow.closed) authWindow.close();
                         lastFMStorage.setEnabled(true);
-                        lastfmToggle.checked = true;
+                        if (lastfmToggle) lastfmToggle.checked = true;
                         updateLastFMUI();
                         lastfmConnectBtn.disabled = false;
                     }
@@ -373,9 +384,9 @@ export async function initializeSettings(scrobbler, player, api, ui) {
         lastfmClearCustomCreds.addEventListener('click', () => {
             if (confirm('Clear custom API credentials?')) {
                 lastFMStorage.clearCustomCredentials();
-                lastfmCustomApiKey.value = '';
-                lastfmCustomApiSecret.value = '';
-                lastfmCustomCredsToggle.checked = false;
+                if (lastfmCustomApiKey) lastfmCustomApiKey.value = '';
+                if (lastfmCustomApiSecret) lastfmCustomApiSecret.value = '';
+                if (lastfmCustomCredsToggle) lastfmCustomCredsToggle.checked = false;
 
                 // Reload credentials
                 scrobbler.lastfm.reloadCredentials();
@@ -412,7 +423,7 @@ export async function initializeSettings(scrobbler, player, api, ui) {
                 const result = await scrobbler.lastfm.authenticateWithCredentials(username, password);
                 if (result.success) {
                     lastFMStorage.setEnabled(true);
-                    lastfmToggle.checked = true;
+                    if (lastfmToggle) lastfmToggle.checked = true;
                     updateLastFMUI();
                     // Clear password for security
                     if (lastfmPasswordInput) lastfmPasswordInput.value = '';
@@ -678,36 +689,38 @@ export async function initializeSettings(scrobbler, player, api, ui) {
 
     themeManager.setTheme('monochrome');
 
-    themePicker.querySelectorAll('.theme-option').forEach((option) => {
-        if (option.dataset.theme === currentTheme) {
-            option.classList.add('active');
-        } else {
-            option.classList.remove('active');
-        }
-
-        if (THEME_CHANGE_LOCKED) return;
-
-        option.addEventListener('click', () => {
-            const theme = option.dataset.theme;
-
-            themePicker.querySelectorAll('.theme-option').forEach((opt) => opt.classList.remove('active'));
-            option.classList.add('active');
-
-            if (theme === 'custom') {
-                document.getElementById('custom-theme-editor').classList.add('show');
-                renderCustomThemeEditor();
-                themeManager.setTheme('custom');
+    if (themePicker) {
+        themePicker.querySelectorAll('.theme-option').forEach((option) => {
+            if (option.dataset.theme === currentTheme) {
+                option.classList.add('active');
             } else {
-                document.getElementById('custom-theme-editor').classList.remove('show');
-                themeManager.setTheme(theme);
+                option.classList.remove('active');
             }
-        });
-    });
 
-    if (THEME_CHANGE_LOCKED) {
-        themePicker.classList.add('disabled');
-        themePicker.setAttribute('aria-disabled', 'true');
-        document.getElementById('custom-theme-editor')?.classList.remove('show');
+            if (THEME_CHANGE_LOCKED) return;
+
+            option.addEventListener('click', () => {
+                const theme = option.dataset.theme;
+
+                themePicker.querySelectorAll('.theme-option').forEach((opt) => opt.classList.remove('active'));
+                option.classList.add('active');
+
+                if (theme === 'custom') {
+                    document.getElementById('custom-theme-editor')?.classList.add('show');
+                    renderCustomThemeEditor();
+                    themeManager.setTheme('custom');
+                } else {
+                    document.getElementById('custom-theme-editor')?.classList.remove('show');
+                    themeManager.setTheme(theme);
+                }
+            });
+        });
+
+        if (THEME_CHANGE_LOCKED) {
+            themePicker.classList.add('disabled');
+            themePicker.setAttribute('aria-disabled', 'true');
+            document.getElementById('custom-theme-editor')?.classList.remove('show');
+        }
     }
 
     const communityThemeContainer = document.getElementById('applied-community-theme-container');
@@ -6668,75 +6681,14 @@ export async function initializeSettings(scrobbler, player, api, ui) {
     const pwaInstallBtn = document.getElementById('pwa-install-btn');
     const pwaInstallDescription = document.getElementById('pwa-install-description');
     if (pwaInstallBtn) {
-        const isStandaloneMode = () =>
-            window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-
-        const getInstallPrompt = () => {
-            if (typeof window.getPwaInstallPrompt === 'function') {
-                return window.getPwaInstallPrompt();
-            }
-            return null;
-        };
-
-        const setInstallDescription = (text) => {
-            if (pwaInstallDescription) pwaInstallDescription.textContent = text;
-        };
-
-        const updateInstallButtonState = () => {
-            const installPrompt = getInstallPrompt();
-
-            if (isStandaloneMode()) {
-                pwaInstallBtn.textContent = 'Installed';
-                pwaInstallBtn.disabled = true;
-                setInstallDescription('audivo is already installed on this device');
-                return;
-            }
-
-            pwaInstallBtn.disabled = false;
-
-            if (installPrompt) {
-                pwaInstallBtn.textContent = 'Install App';
-                setInstallDescription('Install audivo for quick access and an app-like experience');
-                return;
-            }
-
-            pwaInstallBtn.textContent = 'Install Help';
-            if (isIos && isSafari) {
-                setInstallDescription('Open Safari Share menu and choose Add to Home Screen');
-            } else {
-                setInstallDescription('Use your browser menu and choose Install App or Add to Home Screen');
-            }
-        };
-
-        pwaInstallBtn.addEventListener('click', async () => {
-            if (isStandaloneMode()) {
-                alert('audivo is already installed on this device.');
-                return;
-            }
-
-            const installPrompt = getInstallPrompt();
-            if (installPrompt) {
-                await installPrompt.prompt();
-                const choiceResult = await installPrompt.userChoice;
-                if (choiceResult?.outcome === 'accepted') {
-                    setInstallDescription('Install accepted. audivo will be added to your device shortly.');
-                }
-                updateInstallButtonState();
-                return;
-            }
-
-            if (isIos && isSafari) {
-                alert('To install on iPhone/iPad:\n1. Tap Share in Safari\n2. Tap Add to Home Screen\n3. Tap Add');
-                return;
-            }
-
-            alert('To install this app, open your browser menu and select Install App or Add to Home Screen.');
+        pwaInstallBtn.disabled = false;
+        pwaInstallBtn.textContent = 'Install App';
+        if (pwaInstallDescription) {
+            pwaInstallDescription.textContent = 'Download audivo for your device';
+        }
+        pwaInstallBtn.addEventListener('click', () => {
+            window.location.href = '/download';
         });
-
-        window.addEventListener('pwa-install-availability-changed', updateInstallButtonState);
-        window.addEventListener('beforeinstallprompt', updateInstallButtonState);
-        window.addEventListener('appinstalled', updateInstallButtonState);
-        updateInstallButtonState();
     }
 
     // Analytics Toggle
