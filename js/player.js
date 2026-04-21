@@ -168,6 +168,8 @@ export class Player {
             isFetching: false,
             hasMore: true,
         };
+        this.autoQueueFillInProgress = false;
+        this.lastAutoQueueFillAt = 0;
     }
 
     static async initialize(audioElement, api, quality) {
@@ -946,6 +948,9 @@ export class Player {
             await this.playNext();
             return;
         }
+
+        // Keep playback continuous by topping up queue with personalized recommendations.
+        await this.ensureQueueHasRecommendations(2, 10);
 
         // Proactively fetch more artist tracks when the last track starts playing
         console.log('[playTrackFromQueue] Check for fetch:', {
@@ -1808,6 +1813,57 @@ export class Player {
             await this.playTrackFromQueue(0, 0);
         }
         await this.saveQueueState();
+    }
+
+    async ensureQueueHasRecommendations(minUpcoming = 2, addCount = 10) {
+        if (this.radioEnabled) return;
+        if (this.autoQueueFillInProgress) return;
+
+        const now = Date.now();
+        if (now - this.lastAutoQueueFillAt < 15000) return;
+
+        const currentQueue = this.getCurrentQueue();
+        const upcomingCount = Math.max(0, currentQueue.length - (this.currentQueueIndex + 1));
+        if (upcomingCount >= minUpcoming) return;
+
+        this.autoQueueFillInProgress = true;
+        this.lastAutoQueueFillAt = now;
+
+        try {
+            const seeds = await this.pickRadioSeeds();
+            const recommendationSeeds =
+                seeds.length > 0 ? seeds.slice(0, 5) : this.currentTrack ? [this.currentTrack] : [];
+            if (recommendationSeeds.length === 0) return;
+
+            const [favorites, userPlaylists, history] = await Promise.all([
+                db.getFavorites('track'),
+                db.getAll('user_playlists'),
+                db.getHistory(),
+            ]);
+
+            const knownTrackIds = new Set([
+                ...favorites.map((t) => t.id),
+                ...userPlaylists.flatMap((p) => (p.tracks || []).map((t) => t.id)),
+                ...history.map((t) => t.id),
+            ]);
+
+            const recommendations = await this.api.getRecommendedTracksForPlaylist(recommendationSeeds, 40, {
+                knownTrackIds,
+            });
+
+            if (!Array.isArray(recommendations) || recommendations.length === 0) return;
+
+            const currentQueueIds = new Set(this.getCurrentQueue().map((t) => t.id));
+            const uniqueTracks = recommendations.filter((track) => track?.id && !currentQueueIds.has(track.id));
+            if (uniqueTracks.length === 0) return;
+
+            const tracksToAdd = uniqueTracks.slice(0, addCount);
+            await this.addToQueue(tracksToAdd);
+        } catch (error) {
+            console.error('Failed to auto-fill queue recommendations:', error);
+        } finally {
+            this.autoQueueFillInProgress = false;
+        }
     }
 
     async addNextToQueue(trackOrTracks) {
