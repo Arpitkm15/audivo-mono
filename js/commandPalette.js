@@ -47,6 +47,7 @@ import {
 import { Player } from './player.js';
 import { UIRenderer } from './ui.js';
 import { authManager } from './accounts/auth.js';
+import { showAuthModal } from './auth-modal.js';
 
 const ICON_SIZE = 16;
 
@@ -1280,7 +1281,7 @@ class CommandPalette {
 
     async createPlaylist() {
         if (!authManager?.user) {
-            await this.notify('You must login to create playlist.');
+            await showAuthModal('playlist');
             return;
         }
         const name = `New Playlist ${new Date().toLocaleDateString()}`;

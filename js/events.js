@@ -18,12 +18,13 @@ import {
 import { showNotification, downloadTrackWithMetadata, downloadAlbum, downloadPlaylist } from './downloads.js';
 import { downloadQualitySettings } from './storage.js';
 import { updateTabTitle, navigate } from './router.js';
+import { showAuthModal } from './auth-modal.js';
 import { db } from './db.js';
 import { syncManager } from './accounts/supabase-sync.js';
 import { waveformGenerator } from './waveform.js';
 import { audioContextManager } from './audio-context.js';
 import { hapticLongPress, hapticMedium, hapticLight } from './haptics.js';
-import { SVG_BIN, SVG_MUTE, SVG_PAUSE, SVG_PLAY, SVG_VOLUME, SVG_CHECKBOX, SVG_CHECKBOX_CHECKED } from './icons.js';
+import { SVG_BIN, SVG_MUTE, SVG_PAUSE, SVG_PLAY, SVG_VOLUME, SVG_CHECKBOX, SVG_CHECKBOX_CHECKED, SVG_ANIMATE_SPIN } from './icons.js';
 import { partyManager } from './listening-party.js';
 import { MusicAPI } from './music-api.js';
 import { LyricsManager } from './lyrics.js';
@@ -244,7 +245,7 @@ async function showMultiSelectPlaylistModal(tracks) {
         const name = prompt('Playlist name:');
         if (name) {
             if (!authManager?.user) {
-                showNotification('You must login to create playlist.');
+                await showAuthModal('playlist');
                 return;
             }
             await db.createPlaylist(name, tracks).then((_playlist) => {
@@ -384,7 +385,7 @@ async function handleSelectionAction(action) {
     }
 }
 
-export function initializePlayerEvents(player, audioPlayer, scrobbler, ui) {
+export function initializePlayerEvents(player, audioPlayer, scrobbler, ui, lyricsManager) {
     if (homeOpenHotHitsHaryanviBtn) {
         homeOpenHotHitsHaryanviBtn.addEventListener('click', () => {
             navigate('/album/hot-hits-haryanvi');
@@ -424,6 +425,8 @@ export function initializePlayerEvents(player, audioPlayer, scrobbler, ui) {
         element.addEventListener('loadstart', () => {
             if (player.activeElement === element) {
                 historyLoggedTrackId = null;
+                // Show loading spinner
+                playPauseBtn.innerHTML = `<div style="display: flex; align-items: center; justify-content: center; width: 100%; height: 100%;">${SVG_ANIMATE_SPIN(20)}</div>`;
             }
         });
 
@@ -443,6 +446,21 @@ export function initializePlayerEvents(player, audioPlayer, scrobbler, ui) {
                 }
 
                 await updateWaveform();
+
+                // Render lyrics offscreen after playback starts so fullscreen can reuse it instantly.
+                if (lyricsManager && player.currentTrack.id) {
+                    const scheduleBackgroundRender = () => {
+                        void lyricsManager
+                            .preRenderLyricsInBackground(player.currentTrack, element)
+                            .catch((error) => console.warn('Background lyrics render failed:', error));
+                    };
+
+                    if ('requestIdleCallback' in window) {
+                        window.requestIdleCallback(scheduleBackgroundRender, { timeout: 1500 });
+                    } else {
+                        setTimeout(scheduleBackgroundRender, 0);
+                    }
+                }
             }
 
             playPauseBtn.innerHTML = SVG_PAUSE(20);
@@ -453,6 +471,8 @@ export function initializePlayerEvents(player, audioPlayer, scrobbler, ui) {
 
         element.addEventListener('playing', () => {
             if (player.activeElement !== element) return;
+            // Ensure pause icon is shown when playing
+            playPauseBtn.innerHTML = SVG_PAUSE(20);
             player.updateMediaSessionPlaybackState();
             player.updateMediaSessionPositionState();
         });
@@ -1349,7 +1369,6 @@ export async function handleTrackAction(
     } else if (action === 'play-card') {
         player.setQueue([item], 0);
         player.playAtIndex(0);
-        showNotification(`Playing track: ${item.title}`);
     } else if (action === 'start-mix') {
         if (item.mixes?.TRACK_MIX) {
             navigate(`/mix/${item.mixes.TRACK_MIX}`);
@@ -1360,7 +1379,7 @@ export async function handleTrackAction(
         await downloadTrackWithMetadata(item, downloadQualitySettings.getQuality(), api, lyricsManager);
     } else if (action === 'toggle-like') {
         if (!authManager?.user) {
-            showNotification('You must login to like songs and playlists.');
+            await showAuthModal('like');
             return;
         }
 
@@ -2476,7 +2495,7 @@ export function initializeTrackInteractions(player, api, mainContent, contextMen
                         break;
                     case 'toggle-like':
                         if (!authManager?.user) {
-                            showNotification('You must login to like songs and playlists.');
+                            await showAuthModal('like');
                             clearSelection();
                             break;
                         }

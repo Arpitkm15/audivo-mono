@@ -28,6 +28,7 @@ import { debounce, getShareUrl } from './utils.js';
 import { sidePanelManager } from './side-panel.js';
 import { db } from './db.js';
 import { showNotification } from './downloads.js';
+import { showAuthModal } from './auth-modal.js';
 import { syncManager } from './accounts/supabase-sync.js';
 import { authManager } from './accounts/auth.js';
 import { registerSW } from 'virtual:pwa-register';
@@ -1135,7 +1136,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     });
 
-    initializePlayerEvents(Player.instance, audioPlayer, scrobbler, UIRenderer.instance);
+    initializePlayerEvents(Player.instance, audioPlayer, scrobbler, UIRenderer.instance, lyricsManager);
     initializeTrackInteractions(
         Player.instance,
         MusicAPI.instance,
@@ -2407,7 +2408,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
 
                     if (!authManager?.user) {
-                        showNotification('You must login to create playlist.');
+                        await showAuthModal('playlist');
                         return;
                     }
 

@@ -13,6 +13,7 @@ import { db } from './db.js';
 import { syncManager } from './accounts/supabase-sync.js';
 import { authManager } from './accounts/auth.js';
 import { showNotification, downloadTracks } from './downloads.js';
+import { showAuthModal } from './auth-modal.js';
 import {
     SVG_CLOSE,
     SVG_BIN,
@@ -155,7 +156,7 @@ export function initializeUIInteractions(player, api, ui) {
         if (likeBtn) {
             likeBtn.addEventListener('click', async () => {
                 if (!authManager?.user) {
-                    showNotification('You must login to like songs and playlists.');
+                    await showAuthModal('like');
                     return;
                 }
 
@@ -314,7 +315,7 @@ export function initializeUIInteractions(player, api, ui) {
             if (likeBtn && likeBtn.dataset.action === 'toggle-like') {
                 e.stopPropagation();
                 if (!authManager?.user) {
-                    showNotification('You must login to like songs and playlists.');
+                    await showAuthModal('like');
                     return;
                 }
 

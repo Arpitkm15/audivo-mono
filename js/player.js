@@ -2400,6 +2400,11 @@ export class Player {
             return true;
         }
 
+        const canStartInBackground = document.visibilityState === 'hidden' || (this.isIOS && this.isPwa);
+        if (canStartInBackground && element.readyState >= 1) {
+            return true;
+        }
+
         return await new Promise((resolve, reject) => {
             const onCanPlay = () => {
                 element.removeEventListener('canplay', onCanPlay);
@@ -2418,8 +2423,12 @@ export class Player {
             setTimeout(() => {
                 element.removeEventListener('canplay', onCanPlay);
                 element.removeEventListener('error', onError);
-                if (document.visibilityState === 'hidden' || (this.isIOS && this.isPwa)) {
-                    this.autoplayBlocked = true;
+                if (canStartInBackground) {
+                    // Keep background playback moving even if the browser never emits canplay while locked.
+                    if (element.readyState >= 1 || element.src) {
+                        resolve(true);
+                        return;
+                    }
                     resolve(false);
                     return;
                 }

@@ -192,6 +192,8 @@ export class LyricsManager {
         this.currentLyrics = null;
         this.syncedLyrics = [];
         this.lyricsCache = new Map();
+        this.backgroundLyricsRenderCache = new Map();
+        this.backgroundLyricsRenderPromises = new Map();
         this.componentLoaded = false;
         this.amLyricsElement = null;
         this.animationFrameId = null;
@@ -432,6 +434,88 @@ export class LyricsManager {
             await customElements.whenDefined('am-lyrics');
             this.componentLoaded = true;
         }
+    }
+
+    clearBackgroundLyricsRender(trackId) {
+        if (!trackId) return;
+
+        const entry = this.backgroundLyricsRenderCache.get(trackId);
+        if (entry?.container) {
+            clearFullscreenLyricsSync(entry.container);
+            entry.container.remove();
+        }
+
+        this.backgroundLyricsRenderCache.delete(trackId);
+        this.backgroundLyricsRenderPromises.delete(trackId);
+    }
+
+    async preRenderLyricsInBackground(track, audioPlayer) {
+        if (!track?.id || !audioPlayer) return null;
+
+        const cachedEntry = this.backgroundLyricsRenderCache.get(track.id);
+        if (cachedEntry?.element?.isConnected) {
+            return cachedEntry;
+        }
+
+        const pendingPromise = this.backgroundLyricsRenderPromises.get(track.id);
+        if (pendingPromise) return pendingPromise;
+
+        for (const cachedTrackId of this.backgroundLyricsRenderCache.keys()) {
+            if (cachedTrackId !== track.id) {
+                this.clearBackgroundLyricsRender(cachedTrackId);
+            }
+        }
+
+        const renderPromise = (async () => {
+            await this.ensureComponentLoaded();
+
+            const container = document.createElement('div');
+            container.className = 'lyrics-background-preload';
+            container.style.cssText =
+                'position: fixed; left: -10000px; top: 0; width: 1px; height: 1px; overflow: hidden; opacity: 0; pointer-events: none;';
+            container.setAttribute('aria-hidden', 'true');
+            document.body.appendChild(container);
+
+            const element = await renderLyricsComponent(container, track, audioPlayer, this);
+            if (!element) {
+                this.clearBackgroundLyricsRender(track.id);
+                return null;
+            }
+
+            const entry = { container, element, trackId: track.id };
+            this.backgroundLyricsRenderCache.set(track.id, entry);
+            return entry;
+        })()
+            .catch((error) => {
+                console.warn('Background lyrics render failed:', error);
+                this.clearBackgroundLyricsRender(track.id);
+                return null;
+            })
+            .finally(() => {
+                this.backgroundLyricsRenderPromises.delete(track.id);
+            });
+
+        this.backgroundLyricsRenderPromises.set(track.id, renderPromise);
+        return renderPromise;
+    }
+
+    consumeBackgroundLyricsRender(trackId, container) {
+        if (!trackId || !container) return false;
+
+        const entry = this.backgroundLyricsRenderCache.get(trackId);
+        if (!entry?.element) return false;
+
+        container.innerHTML = '';
+        container.appendChild(entry.element);
+        container.lyricsCleanup = entry.container.lyricsCleanup;
+        container.lyricsManager = entry.container.lyricsManager;
+
+        if (entry.container.parentNode) {
+            entry.container.remove();
+        }
+
+        this.backgroundLyricsRenderCache.delete(trackId);
+        return true;
     }
 
     async fetchLyrics(trackId, track = null) {
