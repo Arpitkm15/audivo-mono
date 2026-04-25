@@ -5,7 +5,7 @@ import { SVG_RIGHT_ARROW } from './icons';
 export const apiSettings = {
     STORAGE_KEY: 'monochrome-api-instances-v9',
     BLOCKED_INSTANCE_HOSTS: ['tidal-api.binimum.org', 'audivomusic.vercel.app'],
-    PREFERRED_INSTANCE_URL: '',
+    PREFERRED_INSTANCE_URL: 'https://audivo-hires.vercel.app/',
     INSTANCES_URLS: [
         'https://tidal-uptime.jiffy-puffs-1j.workers.dev/',
         'https://tidal-uptime.props-76styles.workers.dev/',
@@ -106,12 +106,7 @@ export const apiSettings = {
                         { url: 'https://wolf.qqdl.site', version: '2.2' },
                     ],
                     streaming: [
-                        { url: 'https://hifi.geeked.wtf', version: '2.7' },
-                        { url: 'https://maus.qqdl.site', version: '2.6' },
-                        { url: 'https://vogel.qqdl.site', version: '2.6' },
-                        { url: 'https://katze.qqdl.site', version: '2.6' },
-                        { url: 'https://hund.qqdl.site', version: '2.6' },
-                        { url: 'https://wolf.qqdl.site', version: '2.6' },
+                        { url: 'https://audivo-hires.vercel.app/', version: 'custom' },
                     ],
                 };
                 this.instancesLoaded = true;
