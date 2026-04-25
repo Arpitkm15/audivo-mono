@@ -2328,14 +2328,21 @@ class HiFiClient {
                             offset: qp.offset ? Number(qp.offset) : undefined,
                         })
                     );
-                case '/trackManifests':
+                case '/trackManifests': {
+                    const adaptiveParam = qp.adaptive?.toLowerCase();
+                    const parsedAdaptive =
+                        adaptiveParam === undefined
+                            ? undefined
+                            : adaptiveParam === 'true' || adaptiveParam === '1' || adaptiveParam === 'yes';
+
                     return new TidalResponse(
                         await this.getTrackManifest(Number(qp.id), {
                             ...qp,
                             formats: formats.length > 0 ? formats : undefined,
-                            adaptive: Boolean(qp.adaptive?.toLowerCase()) || undefined,
+                            adaptive: parsedAdaptive,
                         })
                     );
+                }
                 case '/widevine':
                     return new TidalResponse(await this.getWidevine());
                 default:

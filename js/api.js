@@ -1611,7 +1611,6 @@ export class LosslessAPI {
 
         try {
             const manifestType = isIos || isSafari ? 'HLS' : 'MPEG_DASH';
-            const isApple = isIos || isSafari;
 
             let canPlayAtmos = false;
             try {
@@ -1635,16 +1634,13 @@ export class LosslessAPI {
             if (quality === 'LOW') {
                 paramsArray.push(['formats', 'HEAACV1']);
             } else if (quality === 'HIGH') {
-                if (!isApple) paramsArray.push(['formats', 'HEAACV1']);
+                if (!(isIos || isSafari)) paramsArray.push(['formats', 'HEAACV1']);
                 paramsArray.push(['formats', 'AACLC']);
             } else if (quality === 'LOSSLESS') {
-                // For Safari to not auto-downgrade to AAC, only request FLAC
-                paramsArray.push(['formats', 'HEAACV1']);
-                paramsArray.push(['formats', 'AACLC']);
+                // Request FLAC only so lossless mode cannot silently resolve to AAC/m4a.
                 paramsArray.push(['formats', 'FLAC']);
             } else if (quality === 'HI_RES_LOSSLESS') {
-                paramsArray.push(['formats', 'HEAACV1']);
-                paramsArray.push(['formats', 'AACLC']);
+                // Request hi-res FLAC first, then standard FLAC fallback.
                 paramsArray.push(['formats', 'FLAC_HIRES']);
                 paramsArray.push(['formats', 'FLAC']);
             } else if (quality === 'DOLBY_ATMOS' && (canPlayAtmos || download)) {
@@ -1660,12 +1656,19 @@ export class LosslessAPI {
                 }
             }
 
+            const wantsLossless = quality === 'LOSSLESS' || quality === 'HI_RES_LOSSLESS';
+
             paramsArray.push(
                 ['adaptive', 'true'],
                 ['manifestType', manifestType],
                 ['uriScheme', 'HTTPS'],
                 ['usage', 'PLAYBACK']
             );
+
+            if (wantsLossless) {
+                // Hint the OpenAPI endpoint to keep the selected quality tier.
+                paramsArray.push(['audioQuality', quality]);
+            }
 
             const params = new URLSearchParams(paramsArray);
 
@@ -1676,6 +1679,14 @@ export class LosslessAPI {
             const jsonResponse = await response.json();
             const url = jsonResponse?.data?.data?.attributes?.uri;
             if (url) {
+                const returnedFormats = jsonResponse?.data?.data?.attributes?.formats || [];
+                if (
+                    wantsLossless &&
+                    !returnedFormats.some((format) => format === 'FLAC' || format === 'FLAC_HIRES')
+                ) {
+                    throw new Error('Manifest endpoint returned non-lossless formats for a lossless request');
+                }
+
                 streamUrl = url;
                 manifestRgInfo = {
                     trackReplayGain: jsonResponse?.data?.data?.attributes?.trackAudioNormalizationData?.replayGain,
