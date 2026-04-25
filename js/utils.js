@@ -295,7 +295,7 @@ export const createQualityBadgeHTML = (track) => {
     if (quality === 'DOLBY_ATMOS') {
         return `<span class="quality-badge quality-atmos" title="Dolby Atmos">${SVG_ATMOS(20)}</span>`;
     } else if (quality === 'HI_RES_LOSSLESS') {
-        return '<span class="quality-badge quality-hires" title="Hi-Res Lossless">HD</span>';
+        return '<span class="quality-badge quality-hires" title="FLAC">FLAC</span>';
     }
     return '';
 };

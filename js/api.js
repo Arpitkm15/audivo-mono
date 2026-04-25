@@ -1636,12 +1636,8 @@ export class LosslessAPI {
             } else if (quality === 'HIGH') {
                 if (!(isIos || isSafari)) paramsArray.push(['formats', 'HEAACV1']);
                 paramsArray.push(['formats', 'AACLC']);
-            } else if (quality === 'LOSSLESS') {
-                // Request FLAC only so lossless mode cannot silently resolve to AAC/m4a.
-                paramsArray.push(['formats', 'FLAC']);
-            } else if (quality === 'HI_RES_LOSSLESS') {
-                // Request hi-res FLAC first, then standard FLAC fallback.
-                paramsArray.push(['formats', 'FLAC_HIRES']);
+            } else if (quality === 'LOSSLESS' || quality === 'HI_RES_LOSSLESS') {
+                // Request standard FLAC only so the streaming instance does not escalate to hi-res output.
                 paramsArray.push(['formats', 'FLAC']);
             } else if (quality === 'DOLBY_ATMOS' && (canPlayAtmos || download)) {
                 paramsArray.push(['formats', 'EAC3_JOC']);
@@ -1657,6 +1653,7 @@ export class LosslessAPI {
             }
 
             const wantsLossless = quality === 'LOSSLESS' || quality === 'HI_RES_LOSSLESS';
+            const requestedAudioQuality = wantsLossless ? 'LOSSLESS' : quality;
 
             paramsArray.push(
                 ['adaptive', 'true'],
@@ -1667,7 +1664,7 @@ export class LosslessAPI {
 
             if (wantsLossless) {
                 // Hint the OpenAPI endpoint to keep the selected quality tier.
-                paramsArray.push(['audioQuality', quality]);
+                paramsArray.push(['audioQuality', requestedAudioQuality]);
             }
 
             const params = new URLSearchParams(paramsArray);

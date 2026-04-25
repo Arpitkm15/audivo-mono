@@ -2148,14 +2148,7 @@ export class Player {
                     } else if (activeVariant.audioCodec) {
                         const codec = activeVariant.audioCodec.toLowerCase();
                         if (codec.includes('flac')) {
-                            const sampleRate = activeVariant.audioSamplingRate
-                                ? activeVariant.audioSamplingRate / 1000
-                                : 44.1;
-                            if (sampleRate > 48 || activeVariant.audioBandwidth > 1200000) {
-                                text = `HD 24/${sampleRate}`;
-                            } else {
-                                text = 'FLAC';
-                            }
+                            text = 'FLAC';
                         } else if (codec.includes('mp4a')) {
                             text = 'AAC';
                         } else if (codec.includes('ec-3') || codec.includes('ac-3')) {
@@ -2247,7 +2240,7 @@ export class Player {
                 const q = this.quality || localStorage.getItem('adaptive-playback-quality') || 'auto';
 
                 if (!isAtmosPlaying) {
-                    if (q === 'HI_RES_LOSSLESS') text = 'HD FLAC';
+                    if (q === 'HI_RES_LOSSLESS') text = 'FLAC';
                     else if (q === 'LOSSLESS') text = 'FLAC';
                     else if (q === 'HIGH') text = 'AAC';
                     else if (q === 'LOW') text = 'AAC Low';

@@ -6454,20 +6454,42 @@ input:checked + .slider::before {
     position: fixed;
     right: 1rem;
     bottom: calc(var(--player-bar-height-desktop) + 1rem);
-    width: min(360px, calc(100vw - 2rem));
+    width: min(320px, calc(100vw - 1.5rem));
     background:
-        linear-gradient(180deg, rgb(17 17 17 / 98%) 0%, rgb(10 10 10 / 98%) 100%),
-        color-mix(in srgb, var(--card) 96%, black);
-    border: 1px solid color-mix(in srgb, var(--border) 70%, #2f2f2f 30%);
-    border-radius: 14px;
+        linear-gradient(135deg, rgb(255 255 255 / 12%) 0%, rgb(255 255 255 / 4%) 26%, rgb(0 0 0 / 12%) 100%),
+        linear-gradient(180deg, rgb(14 14 14 / 58%) 0%, rgb(6 6 6 / 32%) 100%),
+        color-mix(in srgb, var(--card) 62%, transparent);
+    border: 1px solid rgb(255 255 255 / 18%);
+    border-radius: 44px;
+    clip-path: inset(0 round 44px);
     box-shadow:
-        0 20px 45px rgb(0 0 0 / 50%),
-        0 4px 14px rgb(0 0 0 / 36%);
-    padding: 0.7rem;
+        0 26px 68px rgb(0 0 0 / 42%),
+        inset 0 1px 0 rgb(255 255 255 / 14%),
+        inset 0 -1px 0 rgb(0 0 0 / 26%);
+    backdrop-filter: blur(24px) saturate(165%);
+    -webkit-backdrop-filter: blur(24px) saturate(165%);
+    padding: 0.9rem;
     display: none;
     flex-direction: column;
     gap: 0.5rem;
+    overflow: hidden;
+    isolation: isolate;
     z-index: 2200;
+}
+
+.mini-player::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(circle at top right, rgb(var(--highlight-rgb) / 0.22), transparent 36%),
+        linear-gradient(135deg, rgb(255 255 255 / 16%) 0%, transparent 32%, rgb(255 255 255 / 6%) 100%);
+    pointer-events: none;
+}
+
+.mini-player > * {
+    position: relative;
+    z-index: 1;
 }
 
 .mini-player.active {
@@ -6477,10 +6499,12 @@ input:checked + .slider::before {
 .mini-player-media {
     position: relative;
     min-width: 0;
-    border-radius: 10px;
+    border-radius: 36px;
     overflow: hidden;
-    border: 1px solid rgb(255 255 255 / 9%);
-    background: #0f0f0f;
+    border: 1px solid rgb(255 255 255 / 16%);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 12%) 0%, rgb(0 0 0 / 14%) 100%),
+        rgb(15 15 15 / 30%);
 }
 
 .mini-player-cover {
@@ -6521,16 +6545,20 @@ input:checked + .slider::before {
     gap: 0.4rem;
 }
 
-.mini-player-controls-overlay {
-    position: absolute;
-    left: 50%;
-    bottom: 0.6rem;
-    transform: translateX(-50%);
-    width: calc(100% - 1rem);
-    padding: 0.22rem 0.3rem;
+.mini-player-controls-row {
+    width: 100%;
+    padding: 0.35rem 0.5rem;
     border-radius: 999px;
-    background: linear-gradient(180deg, rgb(0 0 0 / 30%) 0%, rgb(0 0 0 / 65%) 100%);
-    backdrop-filter: blur(5px);
+    background:
+        linear-gradient(180deg, rgb(255 255 255 / 10%) 0%, rgb(0 0 0 / 18%) 100%),
+        rgb(0 0 0 / 28%);
+    border: 1px solid rgb(255 255 255 / 14%);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 8%);
+    backdrop-filter: blur(12px);
+}
+
+.mini-player-controls-row .mini-player-play-btn {
+    box-shadow: 0 5px 14px rgb(0 0 0 / 40%);
 }
 
 .mini-player-control-btn {
@@ -6579,7 +6607,7 @@ input:checked + .slider::before {
     width: 100%;
     height: 4px;
     border-radius: 999px;
-    background: rgb(255 255 255 / 20%);
+    background: rgb(255 255 255 / 14%);
     overflow: hidden;
 }
 
@@ -6587,7 +6615,7 @@ input:checked + .slider::before {
     width: 0%;
     height: 100%;
     border-radius: inherit;
-    background: #fff;
+    background: linear-gradient(90deg, rgb(255 255 255 / 92%) 0%, color-mix(in srgb, var(--highlight) 75%, white 25%) 100%);
     transition: width 0.12s linear;
 }
 
