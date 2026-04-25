@@ -110,6 +110,7 @@ describe('Player', () => {
         `;
 
         audioElement = document.getElementById('audio-player');
+        vi.stubGlobal('fetch', vi.fn(async () => ({ status: 404 })));
         api = {
             getCoverUrl: vi.fn((id) => `url-${id}`),
             getCoverSrcset: vi.fn(),
@@ -121,6 +122,7 @@ describe('Player', () => {
 
     afterEach(() => {
         vi.clearAllMocks();
+        vi.unstubAllGlobals();
     });
 
     test('initialization sets up initial state', async () => {
@@ -183,13 +185,53 @@ describe('Player', () => {
         expect(player.currentQueueIndex).toBe(-1);
     });
 
+    test('playTrackFromQueue clears the previous audio before the next track loads', async () => {
+        player = new Player(audioElement, api);
+        player.currentTrack = { type: 'track' };
+        player.queue = [{ id: 'next-track', title: 'Next Track', type: 'track' }];
+        player.currentQueueIndex = 0;
+
+        audioElement.src = 'https://example.com/previous-track.mp3';
+        audioElement.currentTime = 42;
+        audioElement.load = vi.fn();
+        const getStreamUrl = vi.fn(
+            () =>
+                new Promise((resolve) => {
+                    setTimeout(() => resolve({ url: 'https://example.com/new-track.mp3', rgInfo: null }), 0);
+                })
+        );
+        api.getStreamUrl = getStreamUrl;
+
+        player.safePlay = vi.fn(() => Promise.resolve(true));
+        player.waitForCanPlayOrTimeout = vi.fn(() => Promise.resolve(true));
+        player.applyReplayGain = vi.fn();
+        player.applyAudioEffects = vi.fn();
+        player.updatePlayingTrackIndicator = vi.fn();
+        player.updateMediaSession = vi.fn();
+        player.updateMediaSessionPlaybackState = vi.fn();
+        player.preloadNextTracks = vi.fn();
+        player.saveQueueState = vi.fn(() => Promise.resolve());
+
+        const playPromise = player.playTrackFromQueue();
+
+        expect(getStreamUrl.mock.calls).toHaveLength(0);
+        expect(audioElement.currentTime).toBe(0);
+        expect(audioElement.getAttribute('src')).toBeNull();
+
+        await playPromise;
+
+        expect(getStreamUrl.mock.calls[0]).toEqual(['next-track', 'HI_RES_LOSSLESS']);
+        expect(audioElement.currentTime).toBe(0);
+        expect(audioElement.load).toHaveBeenCalled();
+    });
+
     test('setPlaybackSpeed clamps values', () => {
         player = new Player(audioElement, api);
 
         player.setPlaybackSpeed(2.0);
-        expect(audioEffectsSettings.setSpeed).toHaveBeenCalledWith(2.0);
+        expect(audioEffectsSettings.setSpeed.mock.calls[0]).toEqual([2.0]);
 
         player.setPlaybackSpeed(0);
-        expect(audioEffectsSettings.setSpeed).toHaveBeenCalledWith(0.01);
+        expect(audioEffectsSettings.setSpeed.mock.calls[1]).toEqual([0.01]);
     });
 });

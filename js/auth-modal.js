@@ -15,6 +15,12 @@ export async function showAuthModal(action = 'feature') {
             description: 'Sign in or create a Free Audivo account to organize and save your playlists.',
             action: 'create playlists',
         },
+        sync: {
+            title: 'Save Your Music Progress',
+            description:
+                'Sign in to save your liked songs, playlists, and recent listening history across devices.',
+            action: 'save your music progress',
+        },
         default: {
             title: 'Unlock Audivo',
             description: 'Create a Free Audivo account to access this feature.',

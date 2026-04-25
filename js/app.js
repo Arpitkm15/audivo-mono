@@ -59,6 +59,59 @@ import {
 } from './icons.js';
 import { HiFiClient } from './HiFi.js';
 
+// eslint-disable-next-line no-undef
+const APP_BUILD_HASH = typeof __COMMIT_HASH__ !== 'undefined' ? __COMMIT_HASH__ : 'dev';
+const APP_CACHE_VERSION_KEY = 'audivo-app-build-hash';
+const AUTH_NUDGE_SONG_COUNT_KEY = 'audivo-auth-nudge-song-count';
+const AUTH_NUDGE_THRESHOLD_KEY = 'audivo-auth-nudge-threshold';
+
+function getNextAuthNudgeThreshold() {
+    return Math.random() < 0.5 ? 4 : 5;
+}
+
+function resetPlaybackAuthNudgeCounter() {
+    try {
+        localStorage.removeItem(AUTH_NUDGE_SONG_COUNT_KEY);
+        localStorage.removeItem(AUTH_NUDGE_THRESHOLD_KEY);
+    } catch {
+        // Ignore storage errors
+    }
+}
+
+async function maybeShowPlaybackAuthNudge() {
+    if (authManager?.user) {
+        resetPlaybackAuthNudgeCounter();
+        return;
+    }
+
+    if (document.querySelector('.auth-modal-overlay')) {
+        return;
+    }
+
+    try {
+        let count = Number(localStorage.getItem(AUTH_NUDGE_SONG_COUNT_KEY) || '0');
+        let threshold = Number(localStorage.getItem(AUTH_NUDGE_THRESHOLD_KEY) || '0');
+
+        if (!(threshold === 4 || threshold === 5)) {
+            threshold = getNextAuthNudgeThreshold();
+            localStorage.setItem(AUTH_NUDGE_THRESHOLD_KEY, String(threshold));
+        }
+
+        count += 1;
+
+        if (count >= threshold) {
+            localStorage.setItem(AUTH_NUDGE_SONG_COUNT_KEY, '0');
+            localStorage.setItem(AUTH_NUDGE_THRESHOLD_KEY, String(getNextAuthNudgeThreshold()));
+            await showAuthModal('sync');
+            return;
+        }
+
+        localStorage.setItem(AUTH_NUDGE_SONG_COUNT_KEY, String(count));
+    } catch {
+        // Ignore storage errors to avoid blocking playback
+    }
+}
+
 // Capture real iOS state before spoofing (needed for background audio)
 if (typeof window !== 'undefined') {
     const _ua = navigator.userAgent.toLowerCase();
@@ -853,14 +906,50 @@ async function disablePwaForAuthGate() {
         console.warn('Failed to unregister service workers:', error);
     }
 
-    if ('caches' in window) {
-        try {
-            const cacheKeys = await caches.keys();
-            await Promise.all(cacheKeys.map((key) => caches.delete(key)));
-        } catch (error) {
-            console.warn('Failed to clear caches:', error);
-        }
+    await clearBrowserCaches();
+}
+
+async function clearBrowserCaches() {
+    if (!('caches' in window)) return;
+
+    try {
+        const cacheKeys = await caches.keys();
+        await Promise.all(cacheKeys.map((key) => caches.delete(key)));
+    } catch (error) {
+        console.warn('Failed to clear caches:', error);
     }
+}
+
+async function hardRefreshAfterUpdate(updateSW) {
+    await clearBrowserCaches();
+
+    if (typeof updateSW === 'function') {
+        await updateSW(true);
+        return;
+    }
+
+    window.location.reload();
+}
+
+async function ensureFreshBuild() {
+    try {
+        const storedBuildHash = localStorage.getItem(APP_CACHE_VERSION_KEY);
+
+        if (storedBuildHash && storedBuildHash !== APP_BUILD_HASH) {
+            localStorage.setItem(APP_CACHE_VERSION_KEY, APP_BUILD_HASH);
+            await clearBrowserCaches();
+            window.location.reload();
+            return true;
+        }
+
+        if (storedBuildHash !== APP_BUILD_HASH) {
+            localStorage.setItem(APP_CACHE_VERSION_KEY, APP_BUILD_HASH);
+        }
+    } catch (error) {
+        console.warn('Failed to verify app build cache version:', error);
+    }
+
+    return false;
 }
 
 async function uploadCoverImage(file) {
@@ -887,6 +976,10 @@ async function uploadCoverImage(file) {
 }
 
 document.addEventListener('DOMContentLoaded', async () => {
+    if (await ensureFreshBuild()) {
+        return;
+    }
+
     await modernSettings.waitPending();
 
     if (import.meta.env.DEV) {
@@ -1501,6 +1594,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const currentTrackId = Player.instance.currentTrack.id;
         if (currentTrackId === previousTrackId) return;
         previousTrackId = currentTrackId;
+
+        await maybeShowPlaybackAuthNudge();
 
         // Update lyrics panel if it's open
         if (sidePanelManager.isActive('lyrics')) {
@@ -3189,12 +3284,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const updateSW = registerSW({
             onNeedRefresh() {
                 if (pwaUpdateSettings.isAutoUpdateEnabled()) {
-                    // Auto-update: immediately activate the new service worker
-                    updateSW(true);
+                    // Auto-update: clear stale caches, activate the new service worker, and reload.
+                    hardRefreshAfterUpdate(updateSW).catch(console.error);
                 } else {
                     // Show notification with Update button and dismiss option
                     showUpdateNotification(() => {
-                        updateSW(true);
+                        hardRefreshAfterUpdate(updateSW).catch(console.error);
                     });
                 }
             },
@@ -3408,6 +3503,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Always keep navbar user icon visible.
             headerAccountImg.style.display = 'none';
             headerAccountIcon.style.display = 'flex';
+
+            if (_user) {
+                resetPlaybackAuthNudgeCounter();
+            }
         });
     }
 });
@@ -3440,8 +3539,9 @@ function showUpdateNotification(updateCallback) {
             updateCallback();
         } else if (updateCallback && updateCallback.postMessage) {
             updateCallback.postMessage({ action: 'skipWaiting' });
-        } else {
             window.location.reload();
+        } else {
+            hardRefreshAfterUpdate().catch(console.error);
         }
     });
 

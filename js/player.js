@@ -150,6 +150,8 @@ export class Player {
         this.isFallbackRetry = false;
         this.isFallbackInProgress = false;
         this.autoplayBlocked = false;
+        this.isRecoveringTrackMismatch = false;
+        this.lastTrackMismatchRecoveryAt = 0;
         this.isIOS = isIos;
         this.isPwa =
             typeof window !== 'undefined' &&
@@ -191,10 +193,12 @@ export class Player {
         this.audio.addEventListener('canplay', () => {
             this.applyAudioEffects();
         });
+        this.audio.addEventListener('playing', () => this.validatePlayingTrackMatchesCurrentTrack());
         if (this.video) {
             this.video.addEventListener('canplay', () => {
                 this.applyAudioEffects();
             });
+            this.video.addEventListener('playing', () => this.validatePlayingTrackMatchesCurrentTrack());
         }
 
         const waitForImagesLoading = () => {
@@ -935,6 +939,12 @@ export class Player {
         }
 
         const track = currentQueue[this.currentQueueIndex];
+
+        this.resetMediaElement(this.audio);
+        if (this.video) {
+            this.resetMediaElement(this.video);
+        }
+
         if (track.isUnavailable) {
             console.warn(`Attempted to play unavailable track: ${track.title}. Skipping...`);
             await this.playNext();
@@ -993,6 +1003,12 @@ export class Player {
         const isVideoTrack = track.type === 'video';
         const activeElement = isVideoTrack ? this.video : this.audio;
         const inactiveElement = isVideoTrack ? this.audio : this.video;
+
+        this.resetMediaElement(activeElement);
+        if (inactiveElement && inactiveElement !== activeElement) {
+            this.resetMediaElement(inactiveElement);
+        }
+
         if (this.hls) {
             this.hls.destroy();
             this.hls = null;
@@ -1007,22 +1023,9 @@ export class Player {
         }
 
         if (inactiveElement) {
-            inactiveElement.pause();
-            inactiveElement.src = '';
-            inactiveElement.removeAttribute('src');
             inactiveElement.style.display = 'none';
             if (inactiveElement.parentElement !== document.body) {
                 document.body.appendChild(inactiveElement);
-            }
-        }
-
-        if (activeElement) {
-            // Let Shaka overwrite the activeElement's decoder pipeline gracefully if we're carrying it over.
-            // It manages its own buffering teardown implicitly when `load()` is executed.
-            if (!this.shakaInitialized) {
-                activeElement.pause();
-                activeElement.src = '';
-                activeElement.removeAttribute('src');
             }
         }
 
@@ -1127,6 +1130,7 @@ export class Player {
                 this.applyReplayGain();
 
                 activeElement.src = streamUrl;
+                this.markElementTrack(activeElement, track, streamUrl);
                 this.applyAudioEffects();
 
                 const canPlay = await this.waitForCanPlayOrTimeout(activeElement);
@@ -1174,6 +1178,7 @@ export class Player {
                 this.applyReplayGain();
 
                 activeElement.src = streamUrl;
+                this.markElementTrack(activeElement, track, streamUrl);
                 this.applyAudioEffects();
 
                 // Wait for audio to be ready before playing (prevents restart issues with blob URLs)
@@ -1193,6 +1198,7 @@ export class Player {
                 this.applyReplayGain();
 
                 activeElement.src = streamUrl;
+                this.markElementTrack(activeElement, track, streamUrl);
                 this.applyAudioEffects();
 
                 // Wait for audio to be ready before playing
@@ -1250,6 +1256,7 @@ export class Player {
                     activeElement.src = streamUrl;
                 }
 
+                this.markElementTrack(activeElement, track);
                 this.applyAudioEffects();
 
                 if (startTime > 0) {
@@ -1327,9 +1334,11 @@ export class Player {
 
                     // Instantly trigger playback rather than explicitly waiting for 'canplay'
                     // which delays the event loop and natively adds gap/latency
+                    this.markElementTrack(activeElement, track);
                     await this.safePlay(activeElement);
                 } else {
                     activeElement.src = streamUrl;
+                    this.markElementTrack(activeElement, track, streamUrl);
                     this.applyAudioEffects();
                     this.updateAdaptiveQualityBadge();
 
@@ -1643,6 +1652,93 @@ export class Player {
         return this.currentTrack?.type === 'video' ? this.video : this.audio;
     }
 
+    resetMediaElement(element) {
+        if (!element) return;
+
+        element.pause();
+        element.currentTime = 0;
+        element.src = '';
+        element.removeAttribute('src');
+
+        if (typeof element.load === 'function') {
+            element.load();
+        }
+
+        if ('srcObject' in element) {
+            element.srcObject = null;
+        }
+
+        delete element.dataset.trackId;
+        delete element.dataset.trackTitle;
+        delete element.dataset.trackSource;
+    }
+
+    markElementTrack(element, track, sourceUrl = null) {
+        if (!element) return;
+
+        if (track?.id != null) {
+            element.dataset.trackId = String(track.id);
+        } else {
+            delete element.dataset.trackId;
+        }
+
+        const title = getTrackTitle(track);
+        if (title) {
+            element.dataset.trackTitle = title;
+        } else {
+            delete element.dataset.trackTitle;
+        }
+
+        if (sourceUrl) {
+            element.dataset.trackSource = String(sourceUrl);
+        } else {
+            delete element.dataset.trackSource;
+        }
+
+        element.dataset.playbackSequence = String(this.playbackSequence);
+    }
+
+    normalizeMediaSourceForCompare(source) {
+        if (!source || typeof source !== 'string') return '';
+
+        try {
+            return new URL(source, window.location.href).toString();
+        } catch {
+            return source;
+        }
+    }
+
+    validatePlayingTrackMatchesCurrentTrack() {
+        const trackId = this.currentTrack?.id;
+        const element = this.activeElement;
+
+        if (trackId == null || !element || element.paused) return;
+
+        const elementPlaybackSequence = Number(element.dataset.playbackSequence || -1);
+        if (!Number.isFinite(elementPlaybackSequence) || elementPlaybackSequence !== this.playbackSequence) {
+            return;
+        }
+
+        const expectedTrackId = String(trackId);
+        const playingTrackId = element.dataset.trackId || '';
+        if (playingTrackId === expectedTrackId) return;
+
+        const now = Date.now();
+        if (this.isRecoveringTrackMismatch || now - this.lastTrackMismatchRecoveryAt < 1000) {
+            return;
+        }
+
+        this.lastTrackMismatchRecoveryAt = now;
+        this.isRecoveringTrackMismatch = true;
+
+        element.pause();
+        void this.playTrackFromQueue(0, 0)
+            .catch(console.error)
+            .finally(() => {
+                this.isRecoveringTrackMismatch = false;
+            });
+    }
+
     async handlePlayPause() {
         const el = this.activeElement;
         const hasSource = el.src || el.currentSrc || el.srcObject || this.shakaInitialized;
@@ -1937,8 +2033,7 @@ export class Player {
 
     async wipeQueue() {
         const el = this.activeElement;
-        el.pause();
-        el.src = '';
+        this.resetMediaElement(el);
         this.currentTrack = null;
         this.queue = [];
         this.shuffledQueue = [];
